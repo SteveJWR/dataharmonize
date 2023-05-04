@@ -21,7 +21,7 @@ if(slurm_arrayid == ""){
 }
 
 
-include.bootstrap = F
+include.bootstrap = T
 B.boot = 50
 n.sims = 5 # TODO: Change this to 500
 
