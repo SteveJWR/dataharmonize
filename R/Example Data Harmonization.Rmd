@@ -1,0 +1,25 @@
+---
+title: "Example Data Harmonization Analysis"
+author: "Steve Wilkins-Reeves"
+date: "31/08/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Regularized Nonparametric Data Harmonization 
+
+Here we introduce our method from (citation) to harmonize observations 
+
+## Why data harmonization? 
+
+In psychometry and cognitive testing, there are often version changes of cognitive tests measuring the same trait.  For example in Alzheimer's and dementia testing, the MMSE and MOCA are both used for a common cognitive ability. Ideally, one would like a single scale to study such traits, however a challenge is that often we don't have the same individuals taking the same tests. As a result, we can 
+
+
+
+
+
+
+
