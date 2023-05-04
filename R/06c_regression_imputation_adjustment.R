@@ -23,7 +23,7 @@ if(slurm_arrayid == ""){
 
 include.bootstrap = F
 B.boot = 50
-n.sims = 50 # TODO: Change this to 500
+n.sims = 5 # TODO: Change this to 500
 
 #n.set <- c(1000,2000)
 #n.set <- c(1000, 2000, 5000)
