@@ -239,7 +239,7 @@ fmla <- formula(outcome ~ age )
 
 # TODO: Try again in case gamma2 is bimodal
 
-set.seed(1)
+set.seed(id) # finding the correct id's for the simulations.
 sim.start = 1
 
 for(sim in sim.start:n.sims){
@@ -472,21 +472,61 @@ if(make.plots){
   dev.cc <- readRDS("data/06c_dev_cc1.rds")
   dev <- readRDS("data/06c_dev1.rds")
   dev.cov.adj <- readRDS("data/06c_dev_cov_adj1.rds")
+  dev.true.latent <-  readRDS("data/06c_dev_true_latent1.rds")
   dev.z.score <- readRDS("data/06c_dev_zscore1.rds")
   dev.quantile <- readRDS("data/06c_dev_quantile1.rds")
+  dev.bootstrap <- readRDS("data/06c_dev_bootstrap1.rds")
 
   cover.cc <- readRDS("data/06c_cover_cc1.rds")
   cover <- readRDS("data/06c_cover1.rds")
   cover.cov.adj <- readRDS("data/06c_cover_cov_adj1.rds")
+  cover.true.latent <-  readRDS("data/06c_cover_true_latent1.rds")
   cover.z.score <- readRDS("data/06c_cover_zscore1.rds")
   cover.quantile <- readRDS("data/06c_cover_quantile1.rds")
+  cover.bootstrap <- readRDS("data/06c_cover_bootstrap1.rds")
+  for(j in seq(2,200)){
 
+    dev.cc.tmp <- readRDS(paste0("data/06c_dev_cc",j,".rds"))
+    dev.tmp <- readRDS(paste0("data/06c_dev",j,".rds"))
+    dev.cov.adj.tmp <- readRDS(paste0("data/06c_dev_cov_adj",j,".rds"))
+    dev.true.latent.tmp <- readRDS(paste0("data/06c_dev_true_latent",j,".rds"))
+    dev.z.score.tmp <- readRDS(paste0("data/06c_dev_zscore",j,".rds"))
+    dev.quantile.tmp <- readRDS(paste0("data/06c_dev_quantile",j,".rds"))
+    dev.bootstrap.tmp <- readRDS(paste0("data/06c_dev_bootstrap",j,".rds"))
 
+    cover.cc.tmp <- readRDS(paste0("data/06c_cover_cc",j,".rds"))
+    cover.tmp <- readRDS(paste0("data/06c_cover",j,".rds"))
+    cover.cov.adj.tmp <- readRDS(paste0("data/06c_cover_cov_adj",j,".rds"))
+    cover.true.latent.tmp <- readRDS(paste0("data/06c_cover_true_latent",j,".rds"))
+    cover.z.score.tmp <- readRDS(paste0("data/06c_cover_zscore",j,".rds"))
+    cover.quantile.tmp <- readRDS(paste0("data/06c_cover_quantile",j,".rds"))
+    cover.bootstrap.tmp <- readRDS(paste0("data/06c_cover_bootstrap",j,".rds"))
+
+    dev.cc <- rbind(dev.cc, dev.cc.tmp)
+    dev <- rbind(dev, dev.tmp)
+    dev.cov.adj <- rbind(dev.cov.adj, dev.cov.adj.tmp)
+    dev.true.latent <- rbind(dev.true.latent,dev.true.latent.tmp)
+    dev.z.score <- rbind(dev.z.score, dev.z.score.tmp)
+    dev.quantile <- rbind(dev.quantile, dev.quantile.tmp)
+    dev.bootstrap <- rbind(dev.bootstrap, dev.bootstrap.tmp)
+
+    cover.cc <- rbind(cover.cc, cover.cc.tmp)
+    cover <- rbind(cover, cover.tmp)
+    cover.cov.adj <- rbind(cover.cov.adj, cover.cov.adj.tmp)
+    cover.true.latent <- rbind(cover.true.latent,cover.true.latent.tmp)
+    cover.z.score <- rbind(cover.z.score, cover.z.score.tmp)
+    cover.quantile <- rbind(cover.quantile, cover.quantile.tmp)
+    cover.bootstrap <- rbind(cover.bootstrap, cover.bootstrap.tmp)
+  }
+
+  n.sims = nrow(cover.cc)
+  n.set
 
   cc.mean.bias <- colMeans(dev.cc, na.rm = T)
   mean.bias <- colMeans(dev, na.rm = T)
   mean.bias.cov.adj <- colMeans(dev.cov.adj, na.rm = T)
   mean.bias.true.latent <- colMeans(dev.true.latent, na.rm = T)
+  mean.bias.bootstrap <- colMeans(dev.bootstrap, na.rm = T)
   z.score.mean.bias <- colMeans(dev.z.score, na.rm = T)
   quantile.bias <- colMeans(dev.quantile, na.rm = T)
 
@@ -494,6 +534,7 @@ if(make.plots){
   rmse <-sqrt( colMeans(abs(dev)^2, na.rm = T))
   rmse.cov.adj <-sqrt( colMeans(abs(dev.cov.adj)^2, na.rm = T))
   rmse.true.latent <-sqrt( colMeans(abs(dev.true.latent)^2, na.rm = T))
+  rmse.bootstrap <-sqrt( colMeans(abs(dev.bootstrap)^2, na.rm = T))
   z.score.rmse <- sqrt(colMeans(abs(dev.z.score)^2, na.rm = T))
   quantile.rmse <-sqrt( colMeans(abs(dev.quantile)^2, na.rm = T))
 
@@ -501,6 +542,7 @@ if(make.plots){
   rmse.sd <- colSDs(dev, na.rm = T)/sqrt(n.sims)
   rmse.cov.adj.sd <- colSDs(dev.cov.adj, na.rm = T)/sqrt(n.sims)
   rmse.true.latent.sd <- colSDs(dev.true.latent, na.rm = T)/sqrt(n.sims)
+  rmse.bootstrap.sd <- colSDs(dev.bootstrap, na.rm = T)/sqrt(n.sims)
   z.score.rmse.sd <- colSDs(dev.z.score, na.rm = T)/sqrt(n.sims)
   quantile.rmse.sd <- colSDs(dev.quantile, na.rm = T)/sqrt(n.sims)
 
@@ -509,16 +551,20 @@ if(make.plots){
                                       rep("DNOISE", length(n.set)),
                                       rep("DNOISE (cov.adj.)", length(n.set)),
                                       rep("DNOISE (T.L.)", length(n.set)),
+                                      rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
                                       rep("Quantile", length(n.set))),
                          "n" = c(n.set,n.set,n.set,
-                                 n.set,n.set,n.set),
+                                 n.set,n.set,n.set, n.set),
                          "bias" = c(cc.mean.bias,mean.bias, mean.bias.cov.adj,
-                                    mean.bias.true.latent, z.score.mean.bias,quantile.bias),
+                                    mean.bias.true.latent, mean.bias.bootstrap, z.score.mean.bias,quantile.bias),
                          "rmse" = c(cc.rmse,rmse,rmse.cov.adj,
-                                    rmse.true.latent, z.score.rmse,quantile.rmse),
+                                    rmse.true.latent, rmse.bootstrap,
+                                    z.score.rmse,quantile.rmse),
                          "rmse_sd" = c(cc.rmse.sd,rmse.sd,rmse.cov.adj.sd,
-                                       rmse.true.latent.sd, z.score.rmse.sd,quantile.rmse.sd))
+                                       rmse.true.latent.sd,
+                                       rmse.true.latent.sd,
+                                       z.score.rmse.sd,quantile.rmse.sd))
 
 
   plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
@@ -553,20 +599,22 @@ if(make.plots){
   coverage <- colMeans(cover, na.rm = T)
   coverage.cov.adj <- colMeans(cover.cov.adj, na.rm = T)
   coverage.true.latent <- colMeans(cover.true.latent, na.rm = T)
+  coverage.bootstrap <- colMeans(cover.bootstrap, na.rm = T)
   z.score.coverage <- colMeans(cover.z.score, na.rm = T)
   quantile.coverage  <- colMeans(cover.quantile, na.rm = T)
 
   cov.vec <- c(cc.coverage,coverage,coverage.cov.adj,
-               coverage.true.latent, z.score.coverage,quantile.coverage)
+               coverage.true.latent, coverage.bootstrap, z.score.coverage,quantile.coverage)
   cov.error <- sqrt(cov.vec*(1 - cov.vec)/sum(!is.na(cover[,1])))
 
   cov.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
                                       rep("DNOISE (cov. adj.)", length(n.set)),
                                       rep("DNOISE (T.L.)", length(n.set)),
+                                      rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
                                       rep("Quantile", length(n.set))),
-                         "n" = c(n.set,n.set,n.set,n.set, n.set, n.set),
+                         "n" = c(n.set,n.set,n.set,n.set, n.set, n.set, n.set),
                          "coverage" = cov.vec,
                          "error" = cov.error)
 
