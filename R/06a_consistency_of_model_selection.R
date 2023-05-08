@@ -2,7 +2,7 @@
 
 #In this script, we illustrate the consistency of the model selection procedure.
 rm(list = ls())
-
+library(dnoiseR)
 
 slurm_arrayid <- Sys.getenv('SLURM_ARRAY_TASK_ID')
 print(Sys.getenv('SLURM_ARRAY_TASK_ID'))
@@ -47,7 +47,7 @@ if(kernel == "Gaussian"){
   cond.set <- dnoiseR::generate_mkm_list(N = N, ker = gaussian_kernel, h.set = h.seq)
   cond.names <- paste0("Gaussian h = ",as.character(h.seq))
 } else {
-  cond.set <- dnoiseR::generate_mkm_list(N = N, ker = laplace_kernel, h.set = h.seq)
+  cond.set <- dnoiseR::generate_mkm_list(N = N, ker = exponential_kernel, h.set = h.seq)
   cond.names <- paste0("Exponential h = ",as.character(h.seq))
 }
 
