@@ -44,10 +44,10 @@ h.seq <- c(0.8,1,2,3,5,10)
 
 i.true = 3
 if(kernel == "Gaussian"){
-  cond.set <- dnoiseR::generate_mkm_list(N = N, ker = gaussian_kernel, h.set = h.seq)
+  cond.set <- generate_mkm_list(N = N, ker = gaussian_kernel, h.set = h.seq)
   cond.names <- paste0("Gaussian h = ",as.character(h.seq))
 } else {
-  cond.set <- dnoiseR::generate_mkm_list(N = N, ker = exponential_kernel, h.set = h.seq)
+  cond.set <- generate_mkm_list(N = N, ker = exponential_kernel, h.set = h.seq)
   cond.names <- paste0("Exponential h = ",as.character(h.seq))
 }
 
