@@ -7,18 +7,19 @@ rm(list = ls())
 slurm_arrayid <- Sys.getenv('SLURM_ARRAY_TASK_ID')
 print(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 if(slurm_arrayid == ""){
-  id = 1
+  id = 2
 } else {
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
 }
 
+set.seed(id)
 if(id %% 2 == 1){
   kernel="Gaussian"
   ker.true <- gaussian_kernel
 } else {
-  kernel="Laplace"
-  ker.true <- laplace_kernel
+  kernel="Exponential"
+  ker.true <- exponential_kernel
 }
 
 R.bins = 1000
@@ -47,7 +48,7 @@ if(kernel == "Gaussian"){
   cond.names <- paste0("Gaussian h = ",as.character(h.seq))
 } else {
   cond.set <- dnoiseR::generate_mkm_list(N = N, ker = laplace_kernel, h.set = h.seq)
-  cond.names <- paste0("Laplace h = ",as.character(h.seq))
+  cond.names <- paste0("Exponential h = ",as.character(h.seq))
 }
 
 
