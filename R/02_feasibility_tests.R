@@ -1,13 +1,7 @@
 
 
 ## Feasibility Tests
-
-
-
-
-
-
-#In this script, we illustrate the consistency of the model selection procedure.
+#In this script, we illustrate the feasibility tests
 rm(list = ls())
 library(dnoiseR)
 
@@ -40,29 +34,30 @@ cond.true <- conditional_mkm(N,ker.true, h.true)
 
 
 two.obs.ratio = 1
-n1.seq = c(100,200,500,1000)
-n2.seq =  two.obs.ratio*n1.seq
-J = length(n1.seq)
+n.seq = c(100,200,500,1000)
+
+J = length(n.seq)
 
 
 # grid for the values of h
-h.seq <- c(0.8,1,2,3,5,10,20)
+h.set <- c(0.5,0.8,1,2,3,5,10,20)
+H = length(h.set)
 
 i.true = 3
 if(kernel == "Gaussian"){
-  cond.set <- generate_mkm_list(N = N, ker = gaussian_kernel, h.set = h.seq)
-  cond.names <- paste0("Gaussian h = ",as.character(h.seq))
+  cond.set <- generate_mkm_list(N = N, ker = gaussian_kernel, h.set = h.set)
+  cond.names <- paste0("Gaussian h = ",as.character(h.set))
 } else {
-  cond.set <- generate_mkm_list(N = N, ker = exponential_kernel, h.set = h.seq)
-  cond.names <- paste0("Exponential h = ",as.character(h.seq))
+  cond.set <- generate_mkm_list(N = N, ker = exponential_kernel, h.set = h.set)
+  cond.names <- paste0("Exponential h = ",as.character(h.set))
 }
 
 
 
 # correct model selection fraction of sims.
 n.sims <- 5
-res <- matrix(NA, nrow= n.sims, ncol =length(n.seq))
-res <- matrix(NA, nrow= n.sims, ncol =length(n.seq))
+res1 <- array(NA, c(n.sims,length(n.seq),H))
+res2 <- res1
 
 #simulation parameters
 alpha1 <- 1.2
@@ -72,6 +67,7 @@ for(j in seq(J)){
   n = n.seq[j]
 
   for(i in seq(length(cond.set))){
+
     cond <- cond.set[[i]]
     A.matrix <- compute_A_matrix(R.bins, cond)
     A.tensor <- compute_A_tensor(R.bins, cond)
@@ -88,8 +84,11 @@ for(j in seq(J)){
       model1 <- estimate_mixing_npem(p.hat,A.matrix,mu = 0)
       model2 <- estimate_mixing_npem_2(Y,A.matrix,A.tensor,mu = 0)
 
-      p.first.order <- first_order_feasibility_test(model1$observed, p.hat)
-      res1[sim,j] <- TRUE*(i.max == i.true) + FALSE*(i.max != i.true)
+      p.first.order <- first_order_feasibility_test(model1$observed, p.hat, length(gamma))
+      p.second.order <- second_order_feasibility_test(model2$latent,A.tensor,p.hat.2, length(gamma))
+
+      res1[sim,j,i] <- p.first.order
+      res2[sim,j,i] <- p.second.order
     }
   }
 

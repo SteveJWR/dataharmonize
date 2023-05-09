@@ -1,11 +1,5 @@
 
-
-
-
-
-
-
-#In this script, we illustrate the consistency of the model selection procedure.
+#In this script,compare the speeds of the corresponding methods
 rm(list = ls())
 library(dnoiseR)
 
@@ -21,16 +15,18 @@ if(slurm_arrayid == ""){
 set.seed(id)
 if(id %% 2 == 1){
   kernel="Gaussian"
-  ker.true <- gaussian_kernel
+  ker <- gaussian_kernel
 } else {
   kernel="Exponential"
-  ker.true <- exponential_kernel
+  ker <- exponential_kernel
 }
 
 R.bins = 1000
 
-# True Conditional Model
-h.true <- 2
+# Conditional Models
+h.set <- c(0.8,1,2,3,5,10)
+H = length(h.set)
+
 
 #N.seq = c(100,500,1000,5000)
 N.set <- c(5,10,20,50,100)
@@ -45,12 +41,6 @@ mu.set <- seq(0,2,length.out = L)
 
 
 
-# dimensions of the results (sim, samplesize, tuning parameter)
-res <- array(NA,c(J,length(n.seq),L))
-time.npem <- res
-time.numeric <- res
-like.npem <- res
-like.numeric <- res
 
 # 4 different marginals
 marg.1 <- function(N){return(rep(1/(N+1),(N + 1)))}
@@ -59,47 +49,57 @@ marg.3 <- function(N){return(exp(-(seq(0,N))**2) + exp(- (seq(0,N) - N)**2))}
 marg.4 <- function(N){return(sin(seq(0,N)/N * 4* pi) + 1)}
 
 marg.list <- list(marg.1, marg.2, marg.3, marg.4)
-
 K <- length(marg.list)
+
+# dimensions of the results (sim, samplesize, tuning parameter)
+res <- array(NA,c(J,K,L,H))
+time.npem <- res
+time.cvxr <- res
+like.npem <- res
+like.cvxr <- res
+
+
 uniform.latent <- rep(1/R.bins,R.bins)
+# TODO: Also do this as a function of h
 for(j in seq(J)){
   N = N.set[j]
-  cond.true <- conditional_mkm(N,ker.true, h.true)
-  # model for the distribution
-  A.matrix <- compute_A_matrix(R.bins, cond.true)
 
+  for(h in length(h.set)){
+    h.bandwidth = h.set[h]
+    cond <- conditional_mkm(N,ker, h.bandwidth)
+    # model for the distribution
+    A.matrix <- compute_A_matrix(R.bins, cond)
 
-  for(k in seq(K)){
-    marg <- marg.list[[k]]
-    p.hat <- marg(N)
-    p.hat <- p.hat/sum(p.hat)
+    for(k in seq(K)){
+      marg <- marg.list[[k]]
+      p.hat <- marg(N)
+      p.hat <- p.hat/sum(p.hat)
 
-    cat(paste0("Conditional ", k, "/",K), end = "\r")
-    for(i in seq(length(mu.set))){
-      mu = mu.set[i]
+      cat(paste0("Marginal ", k, "/",K), end = "\r")
+      for(i in seq(length(mu.set))){
+        mu = mu.set[i]
 
-      time1 <- Sys.time()
-      model.npem <- estimate_mixing_npem(p.hat,A.matrix, mu)
-      time2 <- Sys.time()
-      model.numeric <- estimate_mixing_numeric(p.hat,A.matrix, mu)
-      time3 <- Sys.time()
+        time1 <- Sys.time()
+        model.npem <- estimate_mixing_npem(p.hat,A.matrix, mu)
+        time2 <- Sys.time()
+        model.numeric <- estimate_mixing_numeric(p.hat,A.matrix, mu)
+        time3 <- Sys.time()
 
-      time.npem <- as.numeric(difftime(time2, time1, units = "secs"))
-      time.numeric <- as.numeric(difftime(time3, time2, units = "secs"))
-      if(mu == 0){
-        like.npem <- -kl_divergence(p.hat,model.npem$observed)
-        like.numeric <- -kl_divergence(p.hat,model.numeric$observed)
+        if(mu == 0){
+          like.npem.tmp <- -kl_divergence(p.hat,model.npem$observed)
+          like.numeric.tmp <- -kl_divergence(p.hat,model.numeric$observed)
 
-      } else {
-        like.npem <- -kl_divergence(p.hat,model.npem$observed) - mu*kl_divergence(uniform.latent, model.npem$latent)
-        like.numeric <- -kl_divergence(p.hat,model.numeric$observed) - mu*kl_divergence(uniform.latent, model.numeric$latent)
+        } else {
+          like.npem.tmp <- -kl_divergence(p.hat,model.npem$observed) - mu*kl_divergence(uniform.latent, model.npem$latent)
+          like.numeric.tmp <- -kl_divergence(p.hat,model.numeric$observed) - mu*kl_divergence(uniform.latent, model.numeric$latent)
+        }
+        time.npem[j,k,i,h] <- as.numeric(difftime(time2, time1, units = "secs"))
+        time.cvxr[j,k,i,h] <- as.numeric(difftime(time3, time2, units = "secs"))
+
+        like.npem[j,k,i,h] <- like.npem.tmp
+        like.cvxr[j,k,i,h] <- like.numeric.tmp
+
       }
-      time.npem[j,k,i] <- time.npem
-      time.numeric[j,k,i] <- time.numeric
-
-      like.npem[j,k,i] <- like.npem
-      like.numeric[j,k,i] <- like.numeric
-
     }
   }
 }
