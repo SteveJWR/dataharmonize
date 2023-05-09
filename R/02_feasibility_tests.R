@@ -94,6 +94,7 @@ for(j in seq(J)){
 
 }
 
+
 saveRDS(res1, paste0("data/feasibility_test_order_1_results_",kernel,ceiling(id/2), ".rds"))
 saveRDS(res2, paste0("data/feasibility_test_order_2_results_",kernel,ceiling(id/2), ".rds"))
 
