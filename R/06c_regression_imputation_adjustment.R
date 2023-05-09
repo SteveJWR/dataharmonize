@@ -460,7 +460,7 @@ if(include.bootstrap){
 
 
 
-make.plots = F
+make.plots = T
 
 if(make.plots){
   library(ggpubr)
@@ -520,7 +520,8 @@ if(make.plots){
   }
 
   n.sims = nrow(cover.cc)
-  n.set
+  n.set <- round(c(100,200,500,1000, 2000, 5000)/13)*13 # smoothed it over
+
 
   cc.mean.bias <- colMeans(dev.cc, na.rm = T)
   mean.bias <- colMeans(dev, na.rm = T)
@@ -634,6 +635,7 @@ if(make.plots){
   plt.coverage
   # Close the pdf file
   dev.off()
+
 }
 
 
