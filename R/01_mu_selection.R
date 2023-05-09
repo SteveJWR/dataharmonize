@@ -70,7 +70,7 @@ for(j in seq(J)){
   }
 }
 
-saveRDS(res, paste0("data/regularization_selection_results_",kernel,id, ".rds"))
+saveRDS(res, paste0("data/regularization_selection_results_",kernel,ceiling(id/2), ".rds"))
 
 
 

@@ -6,7 +6,7 @@ library(dnoiseR)
 slurm_arrayid <- Sys.getenv('SLURM_ARRAY_TASK_ID')
 print(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 if(slurm_arrayid == ""){
-  id = 1
+  id = 2
 } else {
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
@@ -104,11 +104,11 @@ for(j in seq(J)){
   }
 }
 
-saveRDS(time.npem, paste0("data/fitting_speed_npem_results_",kernel,id, ".rds"))
-saveRDS(time.cvxr, paste0("data/fitting_speed_cvxr_results_",kernel,id, ".rds"))
+saveRDS(time.npem, paste0("data/fitting_speed_npem_results_",kernel,ceiling(id/2), ".rds"))
+saveRDS(time.cvxr, paste0("data/fitting_speed_cvxr_results_",kernel,ceiling(id/2), ".rds"))
 
-saveRDS(like.npem, paste0("data/fitting_likelihood_npem_results_",kernel,id, ".rds"))
-saveRDS(like.cvxr, paste0("data/fitting_likelihood_cvxr_results_",kernel,id, ".rds"))
+saveRDS(like.npem, paste0("data/fitting_likelihood_npem_results_",kernel,ceiling(id/2), ".rds"))
+saveRDS(like.cvxr, paste0("data/fitting_likelihood_cvxr_results_",kernel,ceiling(id/2), ".rds"))
 
 
 
