@@ -1,5 +1,7 @@
 rm(list = ls())
 
+# TODO: Change this format for the imputation
+
 library(dplyr)
 library(dnoiseR)
 library(ggplot2)
@@ -21,23 +23,37 @@ if(slurm_arrayid == ""){
 }
 
 
-include.bootstrap = T
-B.boot = 50
+
 n.sims = 5 # TODO: Change this to 500
 
-#n.set <- c(1000,2000)
-#n.set <- c(1000, 2000, 5000)
 
-
-n.true <- 10**(6)
-
-Ny <- 35 # TODO: return to 15
+Ny <- 35
 Nz <- 35
 
 R.bins = 1000
 
 cond.y <- generate_cond_binomial(Ny)
 cond.z <- generate_cond_binomial(Nz)
+
+# conditional distributions with misspecified models
+#generate_mkm_list()
+
+h.small = 1
+h.med = 3
+h.large = 9
+
+ker <- gaussian_kernel
+
+cond.y.small.h <- conditional_mkm(Ny,ker,h.small)
+cond.z.small.h <- conditional_mkm(Nz,ker,h.small)
+
+cond.y.med.h <- conditional_mkm(Ny,ker,h.med)
+cond.z.med.h <- conditional_mkm(Nz,ker,h.med)
+
+cond.y.large.h <- conditional_mkm(Ny,ker,h.large)
+cond.z.large.h <- conditional_mkm(Nz,ker,h.large)
+
+
 # h1 <- 2
 # h2 <- 0.5
 # cond.y <- conditional_mkm(Ny, gaussian_kernel, h1)
@@ -46,46 +62,25 @@ cond.z <- generate_cond_binomial(Nz)
 #rho.grid = c(0.3,0.3,0.7,0.7)
 
 
-
+#n.true = 10000
 # uniform age sample
 #X <- round(runif(n.true, min = 54.5, max = 80.5))
-x.grid = c(55,63,72,80)
-x.grid = seq(55,80)
-X <- rep(x.grid, n.true/4)
-X <- rep(x.grid, round(n.true/length(x.grid)))
+#x.grid = c(55,63,72,80)
+#x.grid = seq(55,80)
+#X <- rep(x.grid, n.true/4)
+#X <- rep(x.grid, round(n.true/length(x.grid)))
 
 
 n.set <- c(100,200,500,1000, 2000, 5000)
 n.set <- round(c(100,200,500,1000, 2000, 5000)/13)*13 # smoothed it over
 
+# missing at random piece
 rho.grid = 0.8*(x.grid < 61) +  0.2*(x.grid >= 61)
+rho.grid = rep(0.5, length(x.grid))
 
 #X <- rep(c(55,80), n.true/2)
-lat.mu <- (-1/10*(X - 67.5)) +  0.5
-lat.mu <- -(1/10*(X - 67.5))^2 +  0.5
-
-
-
-run.true.pop = F
-if(run.true.pop){
-  #U <- runif(n.true)
-  #gamma.true.seq <- dnoiseR::logistic(lat.mu + (U <= 1/2)*(2 + rnorm(length(X),sd = 1)) -(U > 1/2)*(2 + rnorm(length(X),sd = 1)))
-  gamma.true.seq <- logistic(lat.mu +rnorm(length(X),sd = 1))
-  #gamma.true.seq <- logistic(lat.mu +rnorm(length(X),sd = 1))
-  # plot(hist(gamma.true.seq))
-  # plot(hist(sqrt(gamma.true.seq)))
-  #z <- simulate_test_cond(rep(c(2,2),n.true/2),cond.z,gamma.true.seq)
-  z <- rbinom(length(gamma.true.seq),Nz, gamma.true.seq)
-  #z <- simulate_test_cond_uni(cond.z ,gamma.true.seq)
-  dat.pop <- data.frame("Z" = z, "age" = X)
-
-  mod.full.pop <- glm(Z ~ age, data = dat.pop)
-  beta.true <- mod.full.pop$coefficients[2]
-
-  #plot(hist(z,breaks = 36))
-} else {
-  beta.true <- 0
-}
+#lat.mu <- (-1/10*(X - 67.5)) +  0.5
+#lat.mu <- -(1/10*(X - 67.5))^2 +  0.5
 
 
 #unif.1 <- scale_kernel(uniform_kernel,1)
@@ -93,116 +88,43 @@ gaussian_kernel.2 <- scale_kernel(gaussian_kernel,2)
 ref.cols <- "age"
 ker.set <- list(gaussian_kernel.2)
 
-compute.true.latent = T
-if(compute.true.latent){
-  x.grid = c(55,63,72,80)
-  x.grid = seq(55,80)
-  X <- rep(x.grid, n.true/4) # true.x
-  X <- rep(x.grid, round(n.true/length(x.grid)))
-
-  lat.mu <- -(1/10*(X - 67.5))^2 +  0.5
-  #lat.mu2 <- (-1/5*(X - 67.5) +  2.5)*sin(X)
-
-  #U <- runif(n.true)
-  #gamma2 <- logistic(lat.mu2 +  (U <= 1/2)*(2 + rnorm(length(X),sd = 1)) -(U > 1/2)*(2 + rnorm(length(X),sd = 1)))
-
-  gamma2 <- logistic(lat.mu +rnorm(length(X),sd = 1))
-  #gamma.true.seq <- logistic(lat.mu +rnorm(length(X),sd = 1))#gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-  # one to one mapping of latent traits
-  gamma1 <- sqrt(gamma2) #gamma2**(2)
-  #gamma1 <- gamma2*(1/5) + 4/5
-  # true.mix.y <- hist(gamma1, breaks = seq(0,1,length.out = 1001))$density
-  # true.mix.z <- hist(gamma2, breaks = seq(0,1,length.out = 1001))$density
-  # true.mix.y <- true.mix.y/sum(true.mix.y)
-  # true.mix.z <- true.mix.z/sum(true.mix.z)
-  # plot(hist(gamma1, breaks = 50))
-  # plot(hist(gamma2, breaks = 50))
-  # y1 <- rbinom(length(gamma1),Ny, gamma1)
-  # y2 <- rbinom(length(gamma1),Ny, gamma1)
-  # z1 <- rbinom(length(gamma2),Nz, gamma2)
-  # z2 <- rbinom(length(gamma2),Nz, gamma2)
-
-  # Y <- matrix(c(y1,y2), ncol= 2)
-  # Z <- matrix(c(z1,z2), ncol= 2)
-  round.X <- round(X)
-  X.ref = data.frame("age" = round.X)
-  X.un <- data.frame(tmp = sort(unique((X.ref[, ref.cols]))))
-  colnames(X.un) = "age"
-  mixture.y.set <- matrix(NA,nrow = nrow(X.un), ncol = R.bins)
-  mixture.z.set <- matrix(NA,nrow = nrow(X.un), ncol = R.bins)
-  for (j in seq(nrow(X.un))) {
-    x <- as.numeric(X.un[j, ])
-    match.id = which(x == round.X)
-    gamma1.counts = round((R.bins - 1)*gamma1[match.id]) + 1
-    mixture.y = compute_edf(gamma1.counts, R.bins)
-    mixture.y = mixture.y[2:(R.bins + 1)]
-
-    gamma2.counts = round((R.bins - 1)*gamma2[match.id]) + 1
-    mixture.z = compute_edf(gamma2.counts, R.bins)
-    mixture.z = mixture.z[2:(R.bins + 1)]
-
-    mixture.y.set[j,] = mixture.y
-    mixture.z.set[j,] = mixture.z
-  }
-}
-# plot(mixture.y.set[1,])
-# plot(mixture.y.set[2,])
-# plot(mixture.y.set[3,])
-# plot(mixture.y.set[4,])
-#
-#
-# plot(mixture.z.set[1,])
-# plot(mixture.z.set[2,])
-# plot(mixture.z.set[3,])
-# plot(mixture.z.set[4,])
-
-#unif.1 <- scale_kernel(uniform_kernel,1)
-gaussian_kernel.2 <- scale_kernel(gaussian_kernel,2)
-ref.cols <- "age"
-ker.set <- list(gaussian_kernel.2)
 
 
+# results
 
-# deviation results
+res <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.no.reg <- matrix(NA, nrow = n.sims, ncol = length(n.set))
 
-dev.cc <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-dev <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-dev.cov.adj <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-dev.true.latent <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-dev.z.score <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-dev.quantile <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-dev.bootstrap <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-# coverage results
+res.cov.adj <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.cov.adj.small.h <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.cov.adj.med.h <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.cov.adj.large.h <- matrix(NA, nrow = n.sims, ncol = length(n.set))
 
-cover.cc <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-cover <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-cover.cov.adj <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-cover.true.latent <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-cover.z.score <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-cover.quantile <- matrix(NA, nrow = n.sims, ncol = length(n.set))
-cover.bootstrap <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.cov.adj.no.reg <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.cov.adj.small.h.no.reg <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.cov.adj.med.h.no.reg <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+res.cov.adj.large.h.no.reg <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+
+res.z.score <- matrix(NA, nrow = n.sims, ncol = length(n.set))
+
 
 load.prior.results = F
 if(load.prior.results){
-  dev.cc <- readRDS("data/06c_dev_cc.rds")
-  dev <- readRDS("data/06c_dev.rds")
-  dev.cov.adj <- readRDS("data/06c_dev_cov_adj.rds")
-  dev.true.latent <- readRDS("data/06c_dev_true_latent.rds")
-  dev.z.score <- readRDS("data/06c_dev_zscore.rds")
-  dev.quantile <- readRDS("data/06c_dev_quantile.rds")
-  dev.bootstrap <- readRDS("data/06c_dev_bootstrap.rds")
+  res  <- readRDS("data/05_pred.rds")
+  res.no.reg  <- readRDS("data/05_pred_no_reg.rds")
 
-  cover.cc <- readRDS( "data/06c_cover_cc.rds")
-  cover <- readRDS("data/06c_cover.rds")
-  cover.cov.adj <- readRDS("data/06c_cover_cov_adj.rds")
-  cover.true.latent <- readRDS("data/06c_cover_true_latent.rds")
-  cover.z.score <- readRDS("data/06c_cover_zscore.rds")
-  cover.quantile <- readRDS("data/06c_cover_quantile.rds")
-  dev.bootstrap <- readRDS("data/06c_dev_bootstrap.rds")
+  res.cov.adj <- readRDS("data/05_pred_cov_adj.rds")
+  res.cov.adj.small.h <- readRDS("data/05_pred_cov_adj_small_h.rds")
+  res.cov.adj.med.h <- readRDS("data/05_pred_cov_adj_med_h.rds")
+  res.cov.adj.large.h <- readRDS("data/05_pred_cov_adj_large_h.rds")
+
+  res.cov.adj.no.reg <- readRDS("data/05_pred_cov_adj_no_reg.rds")
+  res.cov.adj.small.h.no.reg <- readRDS("data/05_pred_cov_adj_small_h_no_reg.rds")
+  res.cov.adj.med.h.no.reg <- readRDS("data/05_pred_cov_adj_med_h_no_reg.rds")
+  res.cov.adj.large.h.no.reg <- readRDS("data/05_pred_cov_adj_large_h_no_reg.rds")
+
+  res.z.score <- readRDS("data/05_pred_zscore.rds")
 }
-
-#unif.1 <- scale_kernel(uniform_kernel,1)
-
 
 
 ref.cols <- "age"
@@ -231,13 +153,10 @@ ker.list <- list(ker.set.1,
 # ker.set <- list(gaussian_kernel.10)
 
 
-mu.y = 0.0 #0.1 #0.3
-mu.z = 0.0 #0.1 #0.3
-n.impute = 50
-fmla <- formula(outcome ~ age )
-# we want to plot coverage and bias of conversion
+# set mu to reduce as a function of the sample
+mu.y = 100 # reduce /n
+mu.z = 100 # reduce /n
 
-# TODO: Try again in case gamma2 is bimodal
 
 set.seed(id) # finding the correct id's for the simulations.
 sim.start = 1
@@ -246,23 +165,21 @@ for(sim in sim.start:n.sims){
   cat(paste0("Number of sims: ", sim, "/",n.sims), end = "\n")
   if(sim %% 20 == 0){
 
-    saveRDS(dev.cc, paste0("data/06c_dev_cc",id, ".rds"))
-    saveRDS(dev, paste0("data/06c_dev",id, ".rds"))
-    saveRDS(dev.cov.adj, paste0("data/06c_dev_cov_adj",id, ".rds"))
-    saveRDS(dev.true.latent, paste0("data/06c_dev_true_latent",id, ".rds"))
-    saveRDS(dev.z.score, paste0("data/06c_dev_zscore",id, ".rds"))
-    saveRDS(dev.quantile, paste0("data/06c_dev_quantile",id, ".rds"))
 
-    saveRDS(cover.cc, paste0("data/06c_cover_cc",id, ".rds"))
-    saveRDS(cover, paste0("data/06c_cover",id, ".rds"))
-    saveRDS(cover.cov.adj, paste0("data/06c_cover_cov_adj",id, ".rds"))
-    saveRDS(cover.true.latent, paste0("data/06c_cover_true_latent",id, ".rds"))
-    saveRDS(cover.z.score, paste0("data/06c_cover_zscore",id, ".rds"))
-    saveRDS(cover.quantile, paste0("data/06c_cover_quantile",id, ".rds"))
-    if(include.bootstrap){
-      saveRDS(dev.bootstrap, paste0("data/06c_dev_bootstrap",id, ".rds"))
-      saveRDS(cover.bootstrap, paste0("data/06c_cover_bootstrap",id, ".rds"))
-    }
+    saveRDS(res, paste0("data/05_pred",id, ".rds"))
+    saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
+
+    saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
+    saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
+    saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
+    saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
+
+    saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
+    saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
+    saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
+    saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
+
+    saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
   }
 
   for(i in seq(length(n.set))){
@@ -291,6 +208,7 @@ for(sim in sim.start:n.sims){
     }
 
 
+    #
     U <- runif(n)
     gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
     #gamma.true.seq <- logistic(lat.mu +rnorm(length(X),sd = 1))#gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
@@ -319,6 +237,7 @@ for(sim in sim.start:n.sims){
 
     sim.data <- data.frame("Y" = Y[,1],"Z" = Z[,1], "age" = X)
     sim.data$Y[idx2] = NA
+    z.test <- sim.data$Z[idx1]
     sim.data$Z[idx1] = NA
     Y <- as.matrix(Y[idx1,1])
     X.y <- X[idx1]
@@ -326,112 +245,100 @@ for(sim in sim.start:n.sims){
     X.z <- X[idx2]
     Y.train <- cbind(Y, X.y)
     Z.train <- cbind(Z, X.z)
+
     # colnames(Y.train) = c("y1", "y2","age") # do we need any of these?
     # colnames(Z.train) = c("z1", "z2","age")
     colnames(Y.train) = c("y", "age") # do we need any of these?
     colnames(Z.train) = c("z", "age")
-    cc.sim.data <- data.frame("Z" = Z[,1], "age" = X.z)
 
-    mod.full.pop <- glm(Z ~ age, data = cc.sim.data)
-    beta.hat <- mod.full.pop$coefficients[2]
+    #TODO: add all the other kernel and regularized versions
 
+    mean.y <- mean(Y.train[,1])
+    mean.z <- mean(Z.train[,1])
 
-    # ensure in the R package we have the prefixes as y and z
-    colnames(Y) <- c("y")
-    colnames(Z) <- c("z")
-
-    Y = as.data.frame(Y)
-    Z = as.data.frame(Z)
-    list.zscore <- ZScoreConversion(sim.data,Y,Z, Ny, Nz)
-    list.quantile <- QuantileConversion(sim.data,Y,Z, Ny, Nz)
-
-
-    z.score.sim.data <- cbind(list.zscore$Z, list.zscore$X)
-    colnames(z.score.sim.data)[1] = "outcome"
-
-    quantile.sim.data <- cbind(list.quantile$Z, list.quantile$X)
-    colnames(quantile.sim.data)[1] = "outcome"
-
-    #naive z matching
-    fit.z.score <- glm(fmla, data = z.score.sim.data)
-    z.score.coefs <- fit.z.score$coefficients
-    #z.score.coefs
+    sd.y <- sd(Y.train[,1])
+    sd.z <- sd(Z.train[,1])
 
 
 
-    #quantile matching
-    fit.quantile <- glm(fmla, data = quantile.sim.data)
-    quantile.match.coefs <- fit.quantile$coefficients
-    #quantile.match.coefs
+    naive.pred <- normalScoreConversionProb(sim.data$Y[idx1],mean.y,sd.y,mean.z,sd.z, Nz)
 
+    cond.pred <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                        Y.train,Z.train,cond.y,cond.z,
+                                        mu.y/n,mu.z/n,R.bins = 1000)
 
-    impute.sim <- ImputeOutcomes(sim.data,sim.data$Y,sim.data$Z,n.impute,
-                                 Y,Z,cond.y,cond.z,
-                                 mu.y,mu.z,R.bins = 1000)
-
-    #TODO: Ensure the conditional probabilities are matching correctly.
-    impute.sim.cov.adj <- ImputeOutcomes(sim.data,sim.data$Y,sim.data$Z,n.impute,
-                                         Y.train,Z.train,cond.y,cond.z,
-                                         mu.y,mu.z,ref.cols, ker.set, R.bins = 1000)
-
-    impute.sim.true.latents <- ImputeOutcomesTrueLatent(sim.data,sim.data$Y,sim.data$Z,n.impute,
-                                                        cond.y,cond.z,
-                                                        ref.cols, mixture.y.set, mixture.z.set)
-
-
-    X.frame <- data.frame("age" = X)
-    X.frame$complete <- 1*!is.na(sim.data$Z)
-
-    imp.reg <- ImputationRegressionGLM(fmla, X.frame, impute.sim, fit.cc = T)
-    imp.reg.cov.adj <- ImputationRegressionGLM(fmla, X.frame, impute.sim.cov.adj, fit.cc = T)
-    imp.reg.true.latent <- ImputationRegressionGLM(fmla, X.frame, impute.sim.true.latents, fit.cc = T)
+    cond.pred.no.reg <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                               Y.train,Z.train,cond.y,cond.z,
+                                               0,0, R.bins = 1000)
 
 
 
 
-    beta.impute <-imp.reg$coefficients[2]
-    beta.cov.adj <- imp.reg.cov.adj$coefficients[2]
-    beta.true.latent <- imp.reg.true.latent$coefficients[2]
+    cond.pred.cov.adj <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                Y.train,Z.train,cond.y,cond.z,
+                                                mu.y/n,mu.z/n,ref.cols, ker.set, R.bins = 1000)
 
-    beta.hat.cc <-imp.reg$`cc-coefficients`[2]
-    beta.z.score <-z.score.coefs[2]
-    beta.quantile <-quantile.match.coefs[2]
-
-
-    imp.reg$`cc-coefficients`[2] - 2.0*sqrt(imp.reg$`cc-variance`[2,2])  <= beta.true & imp.reg$`cc-coefficients`[2] + 2.0*sqrt(imp.reg$`cc-variance`[2,2]) >= beta.true
-    imp.reg$coefficients[2] - 2.0*sqrt(imp.reg$variance[2,2])  <= beta.true & imp.reg$coefficients[2] + 2.0*sqrt(imp.reg$variance[2,2]) >= beta.true
-    imp.reg.cov.adj$coefficients[2] - 2.0*sqrt(imp.reg.cov.adj$variance[2,2])  <= beta.true & imp.reg.cov.adj$coefficients[2] + 2.0*sqrt(imp.reg.cov.adj$variance[2,2]) >= beta.true
+    cond.pred.cov.adj.no.reg <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                       Y.train,Z.train,cond.y,cond.z,
+                                                       0,0,ref.cols, ker.set, R.bins = 1000)
 
 
-    dev.cc[sim,i] = beta.hat.cc - beta.true
-    dev[sim,i] = beta.impute - beta.true
-    dev.cov.adj[sim,i] = beta.cov.adj - beta.true
-    dev.true.latent[sim,i] = beta.true.latent - beta.true
-    dev.z.score[sim,i] = beta.z.score - beta.true
-    dev.quantile[sim,i] = beta.quantile - beta.true
 
 
-    cover.cc[sim,i] = imp.reg$`cc-coefficients`[2] - 2.0*sqrt(imp.reg$`cc-variance`[2,2])  <= beta.true & imp.reg$`cc-coefficients`[2] + 2.0*sqrt(imp.reg$`cc-variance`[2,2]) >= beta.true
-    cover[sim,i] = imp.reg$coefficients[2] - 2.0*sqrt(imp.reg$variance[2,2])  <= beta.true & imp.reg$coefficients[2] + 2.0*sqrt(imp.reg$variance[2,2]) >= beta.true
-    cover.cov.adj[sim,i] = imp.reg.cov.adj$coefficients[2] - 2.0*sqrt(imp.reg.cov.adj$variance[2,2])  <= beta.true & imp.reg.cov.adj$coefficients[2] + 2.0*sqrt(imp.reg.cov.adj$variance[2,2]) >= beta.true
-    cover.true.latent[sim,i] = imp.reg.true.latent$coefficients[2] - 2.0*sqrt(imp.reg.true.latent$variance[2,2])  <= beta.true & imp.reg.true.latent$coefficients[2] + 2.0*sqrt(imp.reg.true.latent$variance[2,2]) >= beta.true
-    cover.z.score[sim,i] = beta.z.score - 2.0*sqrt(sandwich(fit.z.score)[2,2]) <= beta.true & beta.z.score + 2.0*sqrt(sandwich(fit.z.score)[2,2]) >=  beta.true
-    cover.quantile[sim,i] = beta.quantile - 2.0*sqrt(sandwich(fit.quantile)[2,2]) <= beta.true & beta.quantile + 2.0*sqrt(sandwich(fit.quantile)[2,2]) >=  beta.true
+
+    cond.pred.small.h <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                Y.train,Z.train,cond.y.small.h,cond.z.small.h,
+                                                mu.y/n,mu.z/n,ref.cols, ker.set, R.bins = 1000)
+
+    cond.pred.small.h.no.reg <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                       Y.train,Z.train,cond.y.small.h,cond.z.small.h,
+                                                       0,0,ref.cols, ker.set, R.bins = 1000)
 
 
-    if(include.bootstrap){
-      bootstrap.results <- ImputationRegressionGLMBootstrap(fmla, sim.data,sim.data$Y,sim.data$Z,n.impute,
-                                                            Y.train,Z.train,cond.y,cond.z,
-                                                            mu.y,mu.z,ref.cols, ker.set, R.bins = 1000, B.boot = B.boot, verbose = T)
 
-      dev.bootstrap[sim,i] = bootstrap.results$coefficients[2] - beta.true
-      cover.bootstrap[sim,i] = bootstrap.results$coefficients[2] - 2.0*sqrt(bootstrap.results$variance[2,2])  <= beta.true & bootstrap.results$coefficients[2] + 2.0*sqrt(bootstrap.results$variance[2,2]) >= beta.true
 
-    }
+
+    cond.pred.med.h <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                Y.train,Z.train,cond.y.med.h,cond.z.med.h,
+                                                mu.y/n,mu.z/n,ref.cols, ker.set, R.bins = 1000)
+
+    cond.pred.med.h.no.reg <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                       Y.train,Z.train,cond.y.med.h,cond.z.med.h,
+                                                       0,0,ref.cols, ker.set, R.bins = 1000)
+
+
+
+
+    cond.pred.large.h <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                Y.train,Z.train,cond.y.large.h,cond.z.large.h,
+                                                mu.y/n,mu.z/n,ref.cols, ker.set, R.bins = 1000)
+
+    cond.pred.large.h.no.reg <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
+                                                       Y.train,Z.train,cond.y.large.h,cond.z.large.h,
+                                                       0,0,ref.cols, ker.set, R.bins = 1000)
+
+
+
+
+    res.z.score[sim,i] <- empirical_cross_entropy(naive.pred,z.test)
+
+    res[sim,i]  <- empirical_cross_entropy(cond.pred,z.test)
+    res.no.reg[sim,i]  <- empirical_cross_entropy(cond.pred.no.reg,z.test)
+
+    res.cov.adj[sim,i] <- empirical_cross_entropy(cond.pred.cov.adj,z.test)
+    res.cov.adj.no.reg[sim,i] <- empirical_cross_entropy(cond.pred.cov.adj.no.reg,z.test)
+
+    res.cov.adj.small.h[sim,i] <- empirical_cross_entropy(cond.pred.small.h,z.test)
+    res.cov.adj.small.h.no.reg[sim,i] <- empirical_cross_entropy(cond.pred.small.h.no.reg,z.test)
+
+    res.cov.adj.med.h[sim,i] <- empirical_cross_entropy(cond.pred.med.h,z.test)
+    res.cov.adj.med.h.no.reg[sim,i] <- empirical_cross_entropy(cond.pred.med.h.no.reg,z.test)
+
+    res.cov.adj.large.h[sim,i] <- empirical_cross_entropy(cond.pred.large.h,z.test)
+    res.cov.adj.large.h.no.reg[sim,i] <- empirical_cross_entropy(cond.pred.large.h.no.reg,z.test)
 
 
   }
-
 }
 
 
@@ -439,29 +346,26 @@ for(sim in sim.start:n.sims){
 
 ########
 
-saveRDS(dev.cc, paste0("data/06c_dev_cc",id, ".rds"))
-saveRDS(dev, paste0("data/06c_dev",id, ".rds"))
-saveRDS(dev.cov.adj, paste0("data/06c_dev_cov_adj",id, ".rds"))
-saveRDS(dev.true.latent, paste0("data/06c_dev_true_latent",id, ".rds"))
-saveRDS(dev.z.score, paste0("data/06c_dev_zscore",id, ".rds"))
-saveRDS(dev.quantile, paste0("data/06c_dev_quantile",id, ".rds"))
+saveRDS(res, paste0("data/05_pred",id, ".rds"))
+saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
 
-saveRDS(cover.cc, paste0("data/06c_cover_cc",id, ".rds"))
-saveRDS(cover, paste0("data/06c_cover",id, ".rds"))
-saveRDS(cover.cov.adj, paste0("data/06c_cover_cov_adj",id, ".rds"))
-saveRDS(cover.true.latent, paste0("data/06c_cover_true_latent",id, ".rds"))
-saveRDS(cover.z.score, paste0("data/06c_cover_zscore",id, ".rds"))
-saveRDS(cover.quantile, paste0("data/06c_cover_quantile",id, ".rds"))
+saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
+saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
+saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
+saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
 
-if(include.bootstrap){
-  saveRDS(dev.bootstrap, paste0("data/06c_dev_bootstrap",id, ".rds"))
-  saveRDS(cover.bootstrap, paste0("data/06c_cover_bootstrap",id, ".rds"))
-}
+saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
+saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
+saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
+saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
+
+saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
 
 
 
-make.plots = T
+make.plots = F
 
+#TODO: Finish this set of plots
 if(make.plots){
   library(ggpubr)
   png.width = 1200
@@ -469,38 +373,54 @@ if(make.plots){
   png.res = 200
 
   # update this section to concatenate the results
-  dev.cc <- readRDS("data/06c_dev_cc1.rds")
-  dev <- readRDS("data/06c_dev1.rds")
-  dev.cov.adj <- readRDS("data/06c_dev_cov_adj1.rds")
-  dev.true.latent <-  readRDS("data/06c_dev_true_latent1.rds")
-  dev.z.score <- readRDS("data/06c_dev_zscore1.rds")
-  dev.quantile <- readRDS("data/06c_dev_quantile1.rds")
-  dev.bootstrap <- readRDS("data/06c_dev_bootstrap1.rds")
+  dev.cc <- readRDS("data/06_dev_cc1.rds")
+  dev <- readRDS("data/06_dev1.rds")
+  dev.cov.adj <- readRDS("data/06_dev_cov_adj1.rds")
+  dev.true.latent <-  readRDS("data/06_dev_true_latent1.rds")
+  dev.z.score <- readRDS("data/06_dev_zscore1.rds")
+  dev.quantile <- readRDS("data/06_dev_quantile1.rds")
+  dev.bootstrap <- readRDS("data/06_dev_bootstrap1.rds")
 
-  cover.cc <- readRDS("data/06c_cover_cc1.rds")
-  cover <- readRDS("data/06c_cover1.rds")
-  cover.cov.adj <- readRDS("data/06c_cover_cov_adj1.rds")
-  cover.true.latent <-  readRDS("data/06c_cover_true_latent1.rds")
-  cover.z.score <- readRDS("data/06c_cover_zscore1.rds")
-  cover.quantile <- readRDS("data/06c_cover_quantile1.rds")
-  cover.bootstrap <- readRDS("data/06c_cover_bootstrap1.rds")
+  cover.cc <- readRDS("data/06_cover_cc1.rds")
+  cover <- readRDS("data/06_cover1.rds")
+  cover.cov.adj <- readRDS("data/06_cover_cov_adj1.rds")
+  cover.true.latent <-  readRDS("data/06_cover_true_latent1.rds")
+  cover.z.score <- readRDS("data/06_cover_zscore1.rds")
+  cover.quantile <- readRDS("data/06_cover_quantile1.rds")
+  cover.bootstrap <- readRDS("data/06_cover_bootstrap1.rds")
+
+  #TODO: Finish the set of plots
+  saveRDS(res, paste0("data/05_pred",id, ".rds"))
+  saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
+
+  saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
+  saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
+  saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
+  saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
+
+  saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
+
+  saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
   for(j in seq(2,200)){
 
-    dev.cc.tmp <- readRDS(paste0("data/06c_dev_cc",j,".rds"))
-    dev.tmp <- readRDS(paste0("data/06c_dev",j,".rds"))
-    dev.cov.adj.tmp <- readRDS(paste0("data/06c_dev_cov_adj",j,".rds"))
-    dev.true.latent.tmp <- readRDS(paste0("data/06c_dev_true_latent",j,".rds"))
-    dev.z.score.tmp <- readRDS(paste0("data/06c_dev_zscore",j,".rds"))
-    dev.quantile.tmp <- readRDS(paste0("data/06c_dev_quantile",j,".rds"))
-    dev.bootstrap.tmp <- readRDS(paste0("data/06c_dev_bootstrap",j,".rds"))
+    dev.cc.tmp <- readRDS(paste0("data/06_dev_cc",j,".rds"))
+    dev.tmp <- readRDS(paste0("data/06_dev",j,".rds"))
+    dev.cov.adj.tmp <- readRDS(paste0("data/06_dev_cov_adj",j,".rds"))
+    dev.true.latent.tmp <- readRDS(paste0("data/06_dev_true_latent",j,".rds"))
+    dev.z.score.tmp <- readRDS(paste0("data/06_dev_zscore",j,".rds"))
+    dev.quantile.tmp <- readRDS(paste0("data/06_dev_quantile",j,".rds"))
+    dev.bootstrap.tmp <- readRDS(paste0("data/06_dev_bootstrap",j,".rds"))
 
-    cover.cc.tmp <- readRDS(paste0("data/06c_cover_cc",j,".rds"))
-    cover.tmp <- readRDS(paste0("data/06c_cover",j,".rds"))
-    cover.cov.adj.tmp <- readRDS(paste0("data/06c_cover_cov_adj",j,".rds"))
-    cover.true.latent.tmp <- readRDS(paste0("data/06c_cover_true_latent",j,".rds"))
-    cover.z.score.tmp <- readRDS(paste0("data/06c_cover_zscore",j,".rds"))
-    cover.quantile.tmp <- readRDS(paste0("data/06c_cover_quantile",j,".rds"))
-    cover.bootstrap.tmp <- readRDS(paste0("data/06c_cover_bootstrap",j,".rds"))
+    cover.cc.tmp <- readRDS(paste0("data/06_cover_cc",j,".rds"))
+    cover.tmp <- readRDS(paste0("data/06_cover",j,".rds"))
+    cover.cov.adj.tmp <- readRDS(paste0("data/06_cover_cov_adj",j,".rds"))
+    cover.true.latent.tmp <- readRDS(paste0("data/06_cover_true_latent",j,".rds"))
+    cover.z.score.tmp <- readRDS(paste0("data/06_cover_zscore",j,".rds"))
+    cover.quantile.tmp <- readRDS(paste0("data/06_cover_quantile",j,".rds"))
+    cover.bootstrap.tmp <- readRDS(paste0("data/06_cover_bootstrap",j,".rds"))
 
     dev.cc <- rbind(dev.cc, dev.cc.tmp)
     dev <- rbind(dev, dev.tmp)
