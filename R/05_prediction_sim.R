@@ -66,10 +66,12 @@ cond.z.large.h <- conditional_mkm(Nz,ker,h.large)
 # uniform age sample
 #X <- round(runif(n.true, min = 54.5, max = 80.5))
 #x.grid = c(55,63,72,80)
-#x.grid = seq(55,80)
+
 #X <- rep(x.grid, n.true/4)
 #X <- rep(x.grid, round(n.true/length(x.grid)))
 
+#
+x.grid = seq(55,80)
 
 n.set <- c(100,200,500,1000, 2000, 5000)
 n.set <- round(c(100,200,500,1000, 2000, 5000)/13)*13 # smoothed it over
