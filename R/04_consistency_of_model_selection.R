@@ -7,7 +7,7 @@ library(dnoiseR)
 slurm_arrayid <- Sys.getenv('SLURM_ARRAY_TASK_ID')
 print(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 if(slurm_arrayid == ""){
-  id = 2
+  id = 1
 } else {
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
@@ -30,7 +30,7 @@ h.true <- 2
 
 N <- 30
 
-cond.true <- conditional_mkm(N,ker.true, h.true)
+
 
 
 two.obs.ratio = 1
@@ -40,15 +40,15 @@ J = length(n1.seq)
 
 
 # grid for the values of h
-h.seq <- c(0.8,1,2,3,5,10)
-H = length(h.seq)
+h.set <- c(0.8,1,2,3,5,10)
+H = length(h.set)
 
 if(kernel == "Gaussian"){
-  cond.set <- generate_mkm_list(N = N, ker = gaussian_kernel, h.set = h.seq)
-  cond.names <- paste0("Gaussian h = ",as.character(h.seq))
+  cond.set <- generate_mkm_list(N = N, ker = gaussian_kernel, h.set = h.set)
+  cond.names <- paste0("Gaussian h = ",as.character(h.set))
 } else {
-  cond.set <- generate_mkm_list(N = N, ker = exponential_kernel, h.set = h.seq)
-  cond.names <- paste0("Exponential h = ",as.character(h.seq))
+  cond.set <- generate_mkm_list(N = N, ker = exponential_kernel, h.set = h.set)
+  cond.names <- paste0("Exponential h = ",as.character(h.set))
 }
 
 
@@ -62,6 +62,8 @@ alpha1 <- 1.2
 alpha2 <- 3
 for(h in seq(H)){
   i.true = h
+  h.true = h.set[i.true]
+  cond.true <- conditional_mkm(N,ker.true, h.true)
   for(j in seq(J)){
     n1 = n1.seq[j]
     n2 = n2.seq[j]
