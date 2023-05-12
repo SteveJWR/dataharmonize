@@ -27,8 +27,8 @@ if(slurm_arrayid == ""){
 n.sims = 5 # TODO: Change this to 500
 
 
-Ny <- 35
-Nz <- 35
+Ny <- 30 #
+Nz <- 30 #
 
 R.bins = 1000
 
@@ -77,8 +77,9 @@ n.set <- c(100,200,500,1000, 2000, 5000)
 n.set <- round(c(100,200,500,1000, 2000, 5000)/13)*13 # smoothed it over
 
 # missing at random piece
+# We include the covariate shift in the prediction
+
 rho.grid = 0.8*(x.grid < 61) +  0.2*(x.grid >= 61)
-rho.grid = rep(0.5, length(x.grid))
 
 #X <- rep(c(55,80), n.true/2)
 #lat.mu <- (-1/10*(X - 67.5)) +  0.5
@@ -130,6 +131,7 @@ if(load.prior.results){
 
 
 ref.cols <- "age"
+# is it something with the amount of smoothing?
 gaussian_kernel.1 <- scale_kernel(gaussian_kernel,5/(n.set[1]**(1/5)))
 gaussian_kernel.2 <- scale_kernel(gaussian_kernel,5/(n.set[2]**(1/5)))
 gaussian_kernel.3 <- scale_kernel(gaussian_kernel,5/(n.set[3]**(1/5)))
@@ -321,7 +323,6 @@ for(sim in sim.start:n.sims){
 
 
 
-
     res.z.score[sim,i] <- empirical_cross_entropy(naive.pred,z.test)
 
     res[sim,i]  <- empirical_cross_entropy(cond.pred,z.test)
@@ -374,133 +375,151 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  # update this section to concatenate the results
-  dev.cc <- readRDS("data/06_dev_cc1.rds")
-  dev <- readRDS("data/06_dev1.rds")
-  dev.cov.adj <- readRDS("data/06_dev_cov_adj1.rds")
-  dev.true.latent <-  readRDS("data/06_dev_true_latent1.rds")
-  dev.z.score <- readRDS("data/06_dev_zscore1.rds")
-  dev.quantile <- readRDS("data/06_dev_quantile1.rds")
-  dev.bootstrap <- readRDS("data/06_dev_bootstrap1.rds")
-
-  cover.cc <- readRDS("data/06_cover_cc1.rds")
-  cover <- readRDS("data/06_cover1.rds")
-  cover.cov.adj <- readRDS("data/06_cover_cov_adj1.rds")
-  cover.true.latent <-  readRDS("data/06_cover_true_latent1.rds")
-  cover.z.score <- readRDS("data/06_cover_zscore1.rds")
-  cover.quantile <- readRDS("data/06_cover_quantile1.rds")
-  cover.bootstrap <- readRDS("data/06_cover_bootstrap1.rds")
 
   #TODO: Finish the set of plots
-  saveRDS(res, paste0("data/05_pred",id, ".rds"))
-  saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
+  res <- readRDS(paste0("data/05_pred",1, ".rds"))
+  res.no.reg <- readRDS(paste0("data/05_pred_no_reg",1, ".rds"))
 
-  saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
-  saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
-  saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
-  saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
+  res.cov.adj <- readRDS(paste0("data/05_pred_cov_adj",1, ".rds"))
+  res.cov.adj.small.h <- readRDS(paste0("data/05_pred_cov_adj_small_h",1, ".rds"))
+  res.cov.adj.med.h <- readRDS(paste0("data/05_pred_cov_adj_med_h",1, ".rds"))
+  res.cov.adj.large.h <- readRDS(paste0("data/05_pred_cov_adj_large_h",1, ".rds"))
 
-  saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
-  saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
-  saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
-  saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
+  res.cov.adj.no.reg <- readRDS(paste0("data/05_pred_cov_adj_no_reg",1, ".rds"))
+  res.cov.adj.small.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_small_h_no_reg",1, ".rds"))
+  res.cov.adj.med.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_med_h_no_reg",1, ".rds"))
+  res.cov.adj.large.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_large_h_no_reg",1, ".rds"))
 
-  saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
+  res.z.score <- readRDS(paste0("data/05_pred_zscore",1, ".rds"))
+
+
   for(j in seq(2,200)){
 
-    dev.cc.tmp <- readRDS(paste0("data/06_dev_cc",j,".rds"))
-    dev.tmp <- readRDS(paste0("data/06_dev",j,".rds"))
-    dev.cov.adj.tmp <- readRDS(paste0("data/06_dev_cov_adj",j,".rds"))
-    dev.true.latent.tmp <- readRDS(paste0("data/06_dev_true_latent",j,".rds"))
-    dev.z.score.tmp <- readRDS(paste0("data/06_dev_zscore",j,".rds"))
-    dev.quantile.tmp <- readRDS(paste0("data/06_dev_quantile",j,".rds"))
-    dev.bootstrap.tmp <- readRDS(paste0("data/06_dev_bootstrap",j,".rds"))
+    res.tmp <- readRDS(paste0("data/05_pred",j, ".rds"))
+    res.no.reg.tmp <- readRDS(paste0("data/05_pred_no_reg",j, ".rds"))
 
-    cover.cc.tmp <- readRDS(paste0("data/06_cover_cc",j,".rds"))
-    cover.tmp <- readRDS(paste0("data/06_cover",j,".rds"))
-    cover.cov.adj.tmp <- readRDS(paste0("data/06_cover_cov_adj",j,".rds"))
-    cover.true.latent.tmp <- readRDS(paste0("data/06_cover_true_latent",j,".rds"))
-    cover.z.score.tmp <- readRDS(paste0("data/06_cover_zscore",j,".rds"))
-    cover.quantile.tmp <- readRDS(paste0("data/06_cover_quantile",j,".rds"))
-    cover.bootstrap.tmp <- readRDS(paste0("data/06_cover_bootstrap",j,".rds"))
+    res.cov.adj.tmp <- readRDS(paste0("data/05_pred_cov_adj",j, ".rds"))
+    res.cov.adj.small.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_small_h",j, ".rds"))
+    res.cov.adj.med.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_med_h",j, ".rds"))
+    res.cov.adj.large.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_large_h",j, ".rds"))
 
-    dev.cc <- rbind(dev.cc, dev.cc.tmp)
-    dev <- rbind(dev, dev.tmp)
-    dev.cov.adj <- rbind(dev.cov.adj, dev.cov.adj.tmp)
-    dev.true.latent <- rbind(dev.true.latent,dev.true.latent.tmp)
-    dev.z.score <- rbind(dev.z.score, dev.z.score.tmp)
-    dev.quantile <- rbind(dev.quantile, dev.quantile.tmp)
-    dev.bootstrap <- rbind(dev.bootstrap, dev.bootstrap.tmp)
+    res.cov.adj.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_no_reg",j, ".rds"))
+    res.cov.adj.small.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_small_h_no_reg",j, ".rds"))
+    res.cov.adj.med.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_med_h_no_reg",j, ".rds"))
+    res.cov.adj.large.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_large_h_no_reg",j, ".rds"))
 
-    cover.cc <- rbind(cover.cc, cover.cc.tmp)
-    cover <- rbind(cover, cover.tmp)
-    cover.cov.adj <- rbind(cover.cov.adj, cover.cov.adj.tmp)
-    cover.true.latent <- rbind(cover.true.latent,cover.true.latent.tmp)
-    cover.z.score <- rbind(cover.z.score, cover.z.score.tmp)
-    cover.quantile <- rbind(cover.quantile, cover.quantile.tmp)
-    cover.bootstrap <- rbind(cover.bootstrap, cover.bootstrap.tmp)
+    res.z.score.tmp <- readRDS(paste0("data/05_pred_zscore",j, ".rds"))
+
+    res <- rbind(res, res.tmp)
+    res.no.reg <- rbind(res.no.reg, res.no.reg.tmp)
+
+    res.cov.adj <- rbind(res.cov.adj, res.cov.adj.tmp)
+    res.cov.adj.small.h <- rbind(res.cov.adj.small.h, res.cov.adj.small.h.tmp)
+    res.cov.adj.med.h <- rbind(res.cov.adj.med.h, res.cov.adj.med.h.tmp)
+    res.cov.adj.large.h <- rbind(res.cov.adj.large.h, res.cov.adj.large.h.tmp)
+
+    res.cov.adj.no.reg <- rbind(res.cov.adj.no.reg, res.cov.adj.no.reg.tmp)
+    res.cov.adj.small.h.no.reg <- rbind(res.cov.adj.small.h.no.reg, res.cov.adj.small.h.no.reg.tmp)
+    res.cov.adj.med.h.no.reg <- rbind(res.cov.adj.med.h.no.reg, res.cov.adj.med.h.no.reg.tmp)
+    res.cov.adj.large.h.no.reg <- rbind(res.cov.adj.large.h.no.reg, res.cov.adj.large.h.no.reg.tmp)
+
+    res.z.score <- rbind(res.z.score, res.z.score.tmp)
+
   }
 
-  n.sims = nrow(cover.cc)
+  n.sims = nrow(res.z.score)
   n.set <- round(c(100,200,500,1000, 2000, 5000)/13)*13 # smoothed it over
 
-
-  cc.mean.bias <- colMeans(dev.cc, na.rm = T)
-  mean.bias <- colMeans(dev, na.rm = T)
-  mean.bias.cov.adj <- colMeans(dev.cov.adj, na.rm = T)
-  mean.bias.true.latent <- colMeans(dev.true.latent, na.rm = T)
-  mean.bias.bootstrap <- colMeans(dev.bootstrap, na.rm = T)
-  z.score.mean.bias <- colMeans(dev.z.score, na.rm = T)
-  quantile.bias <- colMeans(dev.quantile, na.rm = T)
-
-  cc.rmse <- sqrt(colMeans(abs(dev.cc)^2, na.rm = T))
-  rmse <-sqrt( colMeans(abs(dev)^2, na.rm = T))
-  rmse.cov.adj <-sqrt( colMeans(abs(dev.cov.adj)^2, na.rm = T))
-  rmse.true.latent <-sqrt( colMeans(abs(dev.true.latent)^2, na.rm = T))
-  rmse.bootstrap <-sqrt( colMeans(abs(dev.bootstrap)^2, na.rm = T))
-  z.score.rmse <- sqrt(colMeans(abs(dev.z.score)^2, na.rm = T))
-  quantile.rmse <-sqrt( colMeans(abs(dev.quantile)^2, na.rm = T))
-
-  cc.rmse.sd <- colSDs(dev.cc, na.rm = T)/sqrt(n.sims)
-  rmse.sd <- colSDs(dev, na.rm = T)/sqrt(n.sims)
-  rmse.cov.adj.sd <- colSDs(dev.cov.adj, na.rm = T)/sqrt(n.sims)
-  rmse.true.latent.sd <- colSDs(dev.true.latent, na.rm = T)/sqrt(n.sims)
-  rmse.bootstrap.sd <- colSDs(dev.bootstrap, na.rm = T)/sqrt(n.sims)
-  z.score.rmse.sd <- colSDs(dev.z.score, na.rm = T)/sqrt(n.sims)
-  quantile.rmse.sd <- colSDs(dev.quantile, na.rm = T)/sqrt(n.sims)
+  J = length(n.set)
 
 
-  res.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
-                                      rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (cov.adj.)", length(n.set)),
-                                      rep("DNOISE (T.L.)", length(n.set)),
-                                      rep("DNOISE (Bootstrap)", length(n.set)),
-                                      rep("Z Score", length(n.set)),
-                                      rep("Quantile", length(n.set))),
-                         "n" = c(n.set,n.set,n.set,
-                                 n.set,n.set,n.set, n.set),
-                         "bias" = c(cc.mean.bias,mean.bias, mean.bias.cov.adj,
-                                    mean.bias.true.latent, mean.bias.bootstrap, z.score.mean.bias,quantile.bias),
-                         "rmse" = c(cc.rmse,rmse,rmse.cov.adj,
-                                    rmse.true.latent, rmse.bootstrap,
-                                    z.score.rmse,quantile.rmse),
-                         "rmse_sd" = c(cc.rmse.sd,rmse.sd,rmse.cov.adj.sd,
-                                       rmse.true.latent.sd,
-                                       rmse.true.latent.sd,
-                                       z.score.rmse.sd,quantile.rmse.sd))
+  data.list = list(res,
+                   res.no.reg,
+                   res.cov.adj,
+                   res.cov.adj.small.h,
+                   res.cov.adj.med.h,
+                   res.cov.adj.large.h,
+                   res.cov.adj.no.reg,
+                   res.cov.adj.small.h.no.reg,
+                   res.cov.adj.med.h.no.reg,
+                   res.cov.adj.large.h.no.reg,
+                   res.z.score)
+
+  mean.vec <- c()
+  sd.vec <- c()
+
+  for(i in seq(length(data.list))){
+      data = data.list[[i]]
+      mean.vec <- c(mean.vec, colMeans(data))
+      sd.vec <- c(sd.vec, colSDs(data))
+  }
+  se.vec <- sd.vec/sqrt(n.sims)
+
+  method.vec <- c(rep("No Covariates", J),
+                  rep("No Covariates", J), #unreg
+                  rep("Binomial", J),
+                  rep("Gaussian h = 1", J),
+                  rep("Gaussian h = 3", J),
+                  rep("Gaussian h = 9", J),
+                  rep("Binomial", J), #unreg
+                  rep("Dnoise Gaussian h = 1", J), #unreg
+                  rep("Dnoise Gaussian h = 3", J), #unreg
+                  rep("Dnoise Gaussian h = 9", J), #unreg
+                  rep("Z score Matching", J)
+                  )
+  reg.vec <- c(rep("Yes", J),
+               rep("No", J),
+               rep("Yes", J),
+               rep("Yes", J),
+               rep("Yes", J),
+               rep("Yes", J),
+               rep("No", J),
+               rep("No", J),
+               rep("No", J),
+               rep("No", J),
+               rep("No", J)
+               )
+
+  sample.size.vec <- rep(n.set, times = length(data.list))
 
 
-  plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
-    geom_line()  #+
+
+
+  res.data <- data.frame("method" = method.vec,
+                         "regularization"= reg.vec,
+                         "SampleSize" = sample.size.vec,
+                         "ce" = -mean.vec,
+                         "ce_se" = se.vec)
+
+  res.data.no.z <- res.data %>% filter(method != "Z score Matching")
+  res.data.z  <- res.data %>% filter(method == "Z score Matching")
+  plt.predictions <- ggplot(res.data.no.z, aes(x = SampleSize, y = ce,
+                                          group = interaction(method, regularization),
+                                          color = method, linetype = regularization)) +
+    geom_line() +
+    geom_point() +
+    geom_errorbar(aes(ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
+    #geom_line(data = res.data.z, aes(x = SampleSize, y = ce,linetype = 3, group = method, color = "black")) +
+    #geom_point(data = res.data.z, aes(x = SampleSize, y = ce,group = method, color = "black")) +
+    #geom_errorbar(data = res.data.z, aes(x = SampleSize, ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
+    ggtitle("Cross Entropy Of Competing Methods") +
+    xlab("Sample Size (n)") +
+    ylab("Cross Entropy") +
+    coord_cartesian(
+      xlim =c(0,5000),
+      ylim = c(2.5,3.5)
+    )
+
+
   #geom_line(aes(x = n, y = rmse, color = method)) #+
-  #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))
+  #
 
-  plt.bias
+  plt.predictions
 
-  png(filename = "plots/sim_binomial_bias.png",
+  png(filename = "plots/prediction_sim_cross_entropy_full.png",
       width = png.width, height = png.height, res = png.res)
 
-  plt.bias
+  plt.predictions
   # Close the pdf file
   dev.off()
 
