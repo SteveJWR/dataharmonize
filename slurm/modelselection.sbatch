@@ -10,4 +10,4 @@
 #SBATCH --mail-type=ALL              # Type of email notification- NONE,BEGIN,END,FAIL,ALL
 #SBATCH --mail-user=stevewr@uw.edu # Email to which notifications will be sent
 module load R/4.0.0-foss-2020a
-Rscript R/06_consistency_of_model_selection.R
+Rscript R/04_consistency_of_model_selection.R
