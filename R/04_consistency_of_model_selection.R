@@ -34,7 +34,7 @@ N <- 30
 
 
 two.obs.ratio = 1
-n1.seq = c(10,50,100,500,1000)
+n1.seq = c(50,75,100,200,500,1000)
 n2.seq =  two.obs.ratio*n1.seq
 J = length(n1.seq)
 
