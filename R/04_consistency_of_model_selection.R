@@ -56,6 +56,7 @@ if(kernel == "Gaussian"){
 # correct model selection fraction of sims.
 n.sims <- 5
 res <- matrix(NA, nrow= n.sims, ncol =length(n1.seq))
+res <- array(NA, c(n.sims, length(n1.seq), H))
 
 #simulation parameters
 alpha1 <- 1.2
@@ -88,10 +89,6 @@ saveRDS(res, paste0("data/model_selection_results_",kernel,ceiling(id/2), ".rds"
 
 
 
-
-
-
-
 make.plots = F
 
 if(make.plots){
@@ -105,7 +102,7 @@ if(make.plots){
 
   kernel = "Gaussian" #"Exponential", "Gaussian"
   # grid.parameters
-  n.seq = c(100,200,500,1000)
+  n.seq = c(100,500,1000,5000)
   J = length(n.seq)
 
 
@@ -113,14 +110,15 @@ if(make.plots){
   res <- readRDS(paste0("data/model_selection_results_",kernel,1, ".rds"))
 
   for(j in seq(2,100)){
-    file.name <- paste0("data/regularization_selection_results_",kernel,j, ".rds")
+    file.name <- paste0("data/model_selection_results_",kernel,j, ".rds")
     if(file.exists(file.name)){
       res.tmp <- readRDS(file.name)
-      res <- rbind(res, res.tmp, along = 1)
+      res <- abind(res, res.tmp, along = 1)
     }
   }
 
   n.sims = dim(res)[1]
+
 
   # subdivide by sample size
   lik.mean = matrix(NA, nrow = L, ncol = J)
