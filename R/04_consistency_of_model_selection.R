@@ -34,7 +34,7 @@ N <- 30
 
 
 two.obs.ratio = 1
-n1.seq = c(100,500,1000,5000)
+n1.seq = c(10,50,100,500,1000)
 n2.seq =  two.obs.ratio*n1.seq
 J = length(n1.seq)
 
@@ -95,18 +95,17 @@ if(make.plots){
   library(ggpubr)
   library(abind)
 
-  kernel = "Gaussian" # "Gaussian" # "Exponential"
   png.width = 1200
   png.height = 1000
   png.res = 200
 
   kernel = "Gaussian" #"Exponential", "Gaussian"
   # grid.parameters
-  n.seq = c(100,500,1000,5000)
+  n.seq = c(10,50,100,500,1000) #c(100,500,1000,5000)
   J = length(n.seq)
+  h.set <- c(0.8,1,2,3,5,10)
+  H = length(h.set)
 
-
-  # TODO: update this section to concatenate the results
   res <- readRDS(paste0("data/model_selection_results_",kernel,1, ".rds"))
 
   for(j in seq(2,100)){
@@ -120,62 +119,38 @@ if(make.plots){
   n.sims = dim(res)[1]
 
 
+  correct.model.vec <- rep(paste(kernel, " Kernel h = ", h.set), each = J)
   # subdivide by sample size
-  lik.mean = matrix(NA, nrow = L, ncol = J)
-  lik.sd = matrix(NA, nrow = L, ncol = J)
+  correct.mean.vec = c()
   for(j in seq(J)){
     res.tmp = as.matrix(res[,j,])
-    lik.mean[,j]= colMeans(res.tmp, na.rm = T)
-    lik.sd[,j] = colSDs(res.tmp, na.rm = T)
+    correct.mean.vec = c(correct.mean.vec, colMeans(res.tmp, na.rm = T))
   }
-  lik.sd = lik.sd/sqrt(n.sims) # standard error of the mean function.
+  correct.sd.vec = sqrt(correct.mean.vec*(1 - correct.mean.vec))
+  correct.se.vec = correct.sd.vec/sqrt(n.sims)
+  sample.size.vec = rep(n.seq)
+
+  res.data <- data.frame("SampleSize" = sample.size.vec,
+                         "TrueModel" = correct.model.vec,
+                         "CorrectModel" = correct.mean.vec,
+                         "CorrectModel_sd" = correct.se.vec)
 
 
-
-
-  lik.mean.vec = c(lik.mean[,1]/(-max(lik.mean[,1])),
-                   lik.mean[,2]/(-max(lik.mean[,2])),
-                   lik.mean[,3]/(-max(lik.mean[,3])),
-                   lik.mean[,4])/(-max(lik.mean[,4]))
-  block.1 <- (lik.mean[,1] - min(lik.mean[,1]))/(max(lik.mean[,1])-min(lik.mean[,1]))
-  block.2 <- (lik.mean[,2] - min(lik.mean[,2]))/(max(lik.mean[,2])-min(lik.mean[,2]))
-  block.3 <- (lik.mean[,3] - min(lik.mean[,3]))/(max(lik.mean[,3])-min(lik.mean[,3]))
-  block.4 <- (lik.mean[,4] - min(lik.mean[,4]))/(max(lik.mean[,4])-min(lik.mean[,4]))
-
-  lik.mean.scaled.vec = c(block.1,block.2,block.3,block.4)
-  block.1 <- (lik.sd[,1])/(max(lik.mean[,1])-min(lik.mean[,1]))
-  block.2 <- (lik.sd[,2])/(max(lik.mean[,2])-min(lik.mean[,2]))
-  block.3 <- (lik.sd[,3])/(max(lik.mean[,3])-min(lik.mean[,3]))
-  block.4 <- (lik.sd[,4])/(max(lik.mean[,4])-min(lik.mean[,4]))
-
-  lik.sd.scaled.vec = c(block.1,block.2,block.3,block.4)
-
-  res.data <- data.frame("SampleSize" = c(rep(paste0("n = ", n.seq[1]), L),
-                                          rep(paste0("n = ", n.seq[2]), L),
-                                          rep(paste0("n = ", n.seq[3]), L),
-                                          rep(paste0("n = ", n.seq[4]), L)),
-                         "mu" = c(mu.set,mu.set,mu.set,mu.set),
-                         "lik.mean" = c(lik.mean[,1], lik.mean[,2], lik.mean[,3], lik.mean[,4]),
-                         "lik.sd" = c(lik.sd[,1], lik.sd[,2], lik.sd[,3], lik.sd[,4]),
-                         "lik.mean.scaled" = lik.mean.scaled.vec,
-                         "lik.sd.scaled" = lik.sd.scaled.vec)
-
-  res.data$SampleSize <- factor(res.data$SampleSize, levels = paste0("n = ", n.seq))
-
-  plt.mu <- ggplot(res.data, aes(x = mu, y = lik.mean.scaled, color = SampleSize)) +
+  plt.mod.sel <- ggplot(res.data, aes(x = SampleSize, y = CorrectModel, group = TrueModel,color = TrueModel)) +
     geom_line() +
-    geom_ribbon(aes(ymin = lik.mean.scaled - 2*lik.sd.scaled, ymax = lik.mean.scaled + 2*lik.sd.scaled, fill = SampleSize),alpha=0.3) +
-    ggtitle(paste0(kernel, " Kernel Cross Validation")) +
-    xlab("Mu") +
-    ylab("Normalized CV Likelihood")
+    geom_point() +
+    geom_errorbar(aes(ymin = CorrectModel - 2*CorrectModel_sd, ymax = CorrectModel + 2*CorrectModel_sd)) +
+    ggtitle(paste0(kernel, " Kernel Model Selection")) +
+    xlab("Sample Size") +
+    ylab("Probability of Correct Model")
   #geom_errorbar(aes(ymin = lik.mean.scaled - 2*lik.sd.scaled, ymax = lik.mean.scaled + 2*lik.sd.scaled))
 
-  plt.mu
+  plt.mod.sel
 
-  png(filename = paste0("plots/regularization_cv_sim",kernel,".png"),
+  png(filename = paste0("plots/model_selection",kernel,".png"),
       width = png.width, height = png.height, res = png.res)
 
-  plt.mu
+  plt.mod.sel
   # Close the pdf file
   dev.off()
 }

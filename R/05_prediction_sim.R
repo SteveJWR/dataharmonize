@@ -508,7 +508,7 @@ if(make.plots){
     coord_cartesian(
       xlim =c(0,5000),
       ylim = c(2.5,3.5)
-    )
+    ) # can change the window for smoother plots
 
 
   #geom_line(aes(x = n, y = rmse, color = method)) #+
