@@ -41,7 +41,9 @@ J = length(n.seq)
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10,20)
-H = length(h.set)
+H = 35
+h.set <- exp(seq(log(0.8), log(20), length.out = H))
+#H = length(h.set)
 
 
 if(kernel == "Gaussian"){
@@ -116,7 +118,8 @@ if(make.plots){
   alpha = 0.05 #
 
   # grid for the values of h
-  h.set <- c(0.8,1,2,3,5,10,20)
+  H = 35
+  h.set <- exp(seq(log(0.8), log(20), length.out = H))
 
   kernel <- "Gaussian" #"Exponential" #"Gaussian"
   # update this section to concatenate the results
@@ -152,8 +155,9 @@ if(make.plots){
                          "rejectProb_sd" = se.vec)
 
   res.data$SampleSize <- factor(res.data$SampleSize, levels = paste0("n = ", n.seq))
-  plt.1 <- ggplot(res.data, aes(x = Bandwidth, y = rejectProb, color = SampleSize)) +
+  plt.1 <- ggplot(res.data, aes(x = log(Bandwidth), y = rejectProb, color = SampleSize)) +
     geom_line()  +
+    geom_vline(aes(xintercept = log(h.true)), linetype = "dashed") +
     geom_ribbon(aes(ymin = rejectProb - 2*rejectProb_sd, ymax = rejectProb + 2*rejectProb_sd, fill = SampleSize),alpha=0.3) +
     ggtitle(paste0(kernel, " Kernel First Order Feasibility Test")) +
     xlab("Bandwidth (h)") +
@@ -164,7 +168,7 @@ if(make.plots){
 
   plt.1
 
-  png(filename = paste0("plots/feasibility_test",kernel,".png"),
+  png(filename = paste0("plots/feasibility_test_first_order",kernel,".png"),
       width = png.width, height = png.height, res = png.res)
 
   plt.1
@@ -193,8 +197,9 @@ if(make.plots){
   res.data$SampleSize <- factor(res.data$SampleSize, levels = paste0("n = ", n.seq))
   plt.2 <- ggplot(res.data, aes(x = log(Bandwidth), y = rejectProb, color = SampleSize)) +
     geom_line()  +
+    geom_vline(aes(xintercept = log(h.true)), linetype = "dashed") +
     geom_ribbon(aes(ymin = rejectProb - 2*rejectProb_sd, ymax = rejectProb + 2*rejectProb_sd, fill = SampleSize),alpha=0.3) +
-    ggtitle(paste0(kernel, " Kernel First Order Feasibility Test")) +
+    ggtitle(paste0(kernel, " Kernel Second Order Feasibility Test")) +
     xlab("log-Bandwidth (h)") +
     ylab("Rejection Probability")
 
@@ -203,10 +208,10 @@ if(make.plots){
 
   plt.2
 
-  png(filename = paste0("plots/feasibility_test",kernel,".png"),
+  png(filename = paste0("plots/feasibility_test_second_order",kernel,".png"),
       width = png.width, height = png.height, res = png.res)
 
-  plt.1
+  plt.2
   # Close the pdf file
   dev.off()
 
