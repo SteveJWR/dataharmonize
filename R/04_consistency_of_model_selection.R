@@ -79,7 +79,7 @@ for(h in seq(H)){
       Y <- simulate_test_cond(obs.set = c(rep(1,n1), rep(2,n2)),cond.true ,gamma)
       model <- error_model_selection_bivariate(cond.set,Y,R.bins,cond.names)
       i.max <- which.max(model$lik_vals)
-      res[sim,j] <- TRUE*(i.max == i.true) + FALSE*(i.max != i.true)
+      res[sim,j, h] <- TRUE*(i.max == i.true) + FALSE*(i.max != i.true)
     }
   }
 }
