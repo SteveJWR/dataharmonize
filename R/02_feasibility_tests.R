@@ -106,7 +106,7 @@ saveRDS(res2, paste0("data/feasibility_test_order_2_results_",kernel,ceiling(id/
 
 
 
-make.plots = F
+make.plots = T
 
 if(make.plots){
   library(ggpubr)
@@ -115,8 +115,8 @@ if(make.plots){
   png.res = 200
   n.seq = c(100,500,1000,5000, 10000)
 
-  alpha = 0.05 #
-
+  alpha = 0.01 #
+  h.true = 3
   # grid for the values of h
   H = 35
   h.set <- exp(seq(log(0.8), log(20), length.out = H))
@@ -159,9 +159,9 @@ if(make.plots){
     geom_line()  +
     geom_vline(aes(xintercept = log(h.true)), linetype = "dashed") +
     geom_ribbon(aes(ymin = rejectProb - 2*rejectProb_sd, ymax = rejectProb + 2*rejectProb_sd, fill = SampleSize),alpha=0.3) +
-    ggtitle(paste0(kernel, " Kernel First Order Feasibility Test")) +
+    ggtitle(paste0(kernel, " Kernel First Order Feasibility Test : \u03B1 = ", alpha )) +
     xlab("Bandwidth (h)") +
-    ylab("Rejection Probability")
+    ylab("Power")
 
   #geom_line(aes(x = n, y = rmse, color = method)) #+
   #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))
@@ -199,9 +199,9 @@ if(make.plots){
     geom_line()  +
     geom_vline(aes(xintercept = log(h.true)), linetype = "dashed") +
     geom_ribbon(aes(ymin = rejectProb - 2*rejectProb_sd, ymax = rejectProb + 2*rejectProb_sd, fill = SampleSize),alpha=0.3) +
-    ggtitle(paste0(kernel, " Kernel Second Order Feasibility Test")) +
+    ggtitle(paste0(kernel, " Kernel Second Order Feasibility Test : \u03B1 = ", alpha )) +
     xlab("log-Bandwidth (h)") +
-    ylab("Rejection Probability")
+    ylab("Power")
 
   #geom_line(aes(x = n, y = rmse, color = method)) #+
   #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))

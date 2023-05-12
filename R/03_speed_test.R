@@ -6,7 +6,7 @@ library(dnoiseR)
 slurm_arrayid <- Sys.getenv('SLURM_ARRAY_TASK_ID')
 print(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 if(slurm_arrayid == ""){
-  id = 2
+  id = 1
 } else {
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
@@ -51,7 +51,7 @@ marg.4 <- function(N){return(sin(seq(0,N)/N * 4* pi) + 1)}
 marg.list <- list(marg.1, marg.2, marg.3, marg.4)
 K <- length(marg.list)
 
-# dimensions of the results (sim, samplesize, tuning parameter)
+# dimensions of the results (numquestions,marginal, regularization values, bandwidth)
 res <- array(NA,c(J,K,L,H))
 time.npem <- res
 time.cvxr <- res
@@ -64,7 +64,7 @@ uniform.latent <- rep(1/R.bins,R.bins)
 for(j in seq(J)){
   N = N.set[j]
 
-  for(h in length(h.set)){
+  for(h in seq(length(h.set))){
     h.bandwidth = h.set[h]
     cond <- conditional_mkm(N,ker, h.bandwidth)
     # model for the distribution
@@ -104,6 +104,8 @@ for(j in seq(J)){
   }
 }
 
+
+
 saveRDS(time.npem, paste0("data/fitting_speed_npem_results_",kernel,ceiling(id/2), ".rds"))
 saveRDS(time.cvxr, paste0("data/fitting_speed_cvxr_results_",kernel,ceiling(id/2), ".rds"))
 
@@ -113,6 +115,117 @@ saveRDS(like.cvxr, paste0("data/fitting_likelihood_cvxr_results_",kernel,ceiling
 
 
 
+
+make.plots = F
+
+if(make.plots){
+  library(ggpubr)
+  library(abind)
+
+
+  png.width = 1200
+  png.height = 1000
+  png.res = 200
+
+  kernel = "Gaussian" # "Gaussian" # "Exponential"
+
+  # grid.parameters
+  # Conditional Models
+  h.set <- c(0.8,1,2,3,5,10)
+  H = length(h.set)
+
+
+  #N.seq = c(100,500,1000,5000)
+  N.set <- c(5,10,20,50,100)
+  J = length(N.set)
+
+
+
+
+  # grid for the values of mu
+  L = 5
+  mu.set <- seq(0,2,length.out = L)
+
+  # two groups, one with mu = 0
+  # one with mu = 2
+
+
+  # TODO: update this section to concatenate the results
+  time.npem <- readRDS(paste0("data/fitting_speed_npem_results_",kernel,1, ".rds"))
+  time.cvxr <- readRDS(paste0("data/fitting_speed_cvxr_results_",kernel,1, ".rds"))
+
+  like.npem <- readRDS(paste0("data/fitting_likelihood_npem_results_",kernel,1, ".rds"))
+  like.cvxr <- readRDS(paste0("data/fitting_likelihood_cvxr_results_",kernel,1, ".rds"))
+
+  dim(time.npem)
+  plot.data <- data.frame("N" = c(),
+                          "Dist" = c(),
+                          "Bandwidth" = c(),
+                          "mu" = c(),
+                          "Time" = c(),
+                          "KL" = c(),
+                          "Method" = c())
+
+  # K is the number of the different distributions to fit
+  K = dim(time.npem)[2]
+  for(j in seq(J)){
+      for(k in seq(K)){
+        for(l in seq(L)){
+          for(h in seq(H)){
+
+            new.row.npem <- c(N.set[j],k,h.set[h],mu.set[l],time.npem[j,k,l,h] ,like.npem[j,k,l,h] ,"NPEM")
+            new.row.cvxr <- c(N.set[j],k,h.set[h],mu.set[l],time.cvxr[j,k,l,h] ,like.cvxr[j,k,l,h] ,"CVXR")
+            plot.data <- rbind(plot.data,new.row.npem)
+            plot.data <- rbind(plot.data,new.row.cvxr)
+          }
+        }
+      }
+  }
+  colnames(plot.data) = c("N","Dist","Bandwidth",
+                        "mu","Time","KL","Method")
+  plot.data$N <- factor(plot.data$N, levels = N.set)
+  plot.data$Time = as.numeric(plot.data$Time)
+  plot.data$KL = as.numeric(plot.data$KL)
+
+  for(k in seq(K)){
+    for(l in seq(L)){
+        cond.idx = k
+        mu.tmp = mu.set[l]
+        plot.data.tmp <- plot.data %>% filter(mu == mu.tmp, Dist == cond.idx)
+
+        title <- paste0("Time Comparison ", kernel, " Kernel : \u03bc = ", mu.tmp," --- Conditional: ",cond.idx )
+        plot.time <-  ggplot(plot.data.tmp, aes(Bandwidth, log(Time), group = interaction(N, Method),
+                       color = N, linetype = Method)) +
+          geom_line() + geom_point() +
+          ggtitle(title) +
+          xlab("Bandwidth (h)")
+        plot.time
+
+        png(filename = paste0("plots/time_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
+            width = png.width, height = png.height, res = png.res)
+
+        plot.time
+        # Close the pdf file
+        dev.off()
+        title <- paste0("Fit Comparison ", kernel, " Kernel : \u03bc = ", mu.tmp," --- Conditional: ",cond.idx )
+
+        plot.lik <-  ggplot(plot.data.tmp, aes(x = Bandwidth, y = KL, group = interaction(N, Method),
+                                                color = N, linetype = Method)) +
+          geom_line() + geom_point() +
+          ggtitle(title) +
+          xlab("Bandwidth (h)")
+        plot.lik
+
+
+        png(filename = paste0("plots/fit_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
+            width = png.width, height = png.height, res = png.res)
+
+        plot.lik
+        # Close the pdf file
+        dev.off()
+      }
+  }
+}
 
 
 

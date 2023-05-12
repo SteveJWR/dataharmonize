@@ -82,7 +82,7 @@ if(make.plots){
   library(ggpubr)
   library(abind)
 
-  kernel = "Gaussian" # "Exponential"
+  kernel = "Gaussian" # "Gaussian" # "Exponential"
   png.width = 1200
   png.height = 1000
   png.res = 200
@@ -94,130 +94,75 @@ if(make.plots){
   L = 200
   mu.set <- seq(0,2,length.out = L)
 
-  # update this section to concatenate the results
+  # TODO: update this section to concatenate the results
   res <- readRDS(paste0("data/regularization_selection_results_",kernel,1, ".rds"))
 
   for(j in seq(2,200)){
-
-    res.tmp <- readRDS(paste0("data/regularization_selection_results_",kernel,j, ".rds"))
-
-    res <- rbind(cover.cc, cover.cc.tmp)
-
+    file.name <- paste0("data/regularization_selection_results_",kernel,j, ".rds")
+    if(file.exists(file.name)){
+      res.tmp <- readRDS(file.name)
+      res <- abind(res, res.tmp, along = 1)
+    }
   }
 
-  n.sims = nrow(cover.cc)
-  n.set
+  n.sims = dim(res)[1]
 
-  cc.mean.bias <- colMeans(dev.cc, na.rm = T)
-  mean.bias <- colMeans(dev, na.rm = T)
-  mean.bias.cov.adj <- colMeans(dev.cov.adj, na.rm = T)
-  mean.bias.true.latent <- colMeans(dev.true.latent, na.rm = T)
-  mean.bias.bootstrap <- colMeans(dev.bootstrap, na.rm = T)
-  z.score.mean.bias <- colMeans(dev.z.score, na.rm = T)
-  quantile.bias <- colMeans(dev.quantile, na.rm = T)
-
-  cc.rmse <- sqrt(colMeans(abs(dev.cc)^2, na.rm = T))
-  rmse <-sqrt( colMeans(abs(dev)^2, na.rm = T))
-  rmse.cov.adj <-sqrt( colMeans(abs(dev.cov.adj)^2, na.rm = T))
-  rmse.true.latent <-sqrt( colMeans(abs(dev.true.latent)^2, na.rm = T))
-  rmse.bootstrap <-sqrt( colMeans(abs(dev.bootstrap)^2, na.rm = T))
-  z.score.rmse <- sqrt(colMeans(abs(dev.z.score)^2, na.rm = T))
-  quantile.rmse <-sqrt( colMeans(abs(dev.quantile)^2, na.rm = T))
-
-  cc.rmse.sd <- colSDs(dev.cc, na.rm = T)/sqrt(n.sims)
-  rmse.sd <- colSDs(dev, na.rm = T)/sqrt(n.sims)
-  rmse.cov.adj.sd <- colSDs(dev.cov.adj, na.rm = T)/sqrt(n.sims)
-  rmse.true.latent.sd <- colSDs(dev.true.latent, na.rm = T)/sqrt(n.sims)
-  rmse.bootstrap.sd <- colSDs(dev.bootstrap, na.rm = T)/sqrt(n.sims)
-  z.score.rmse.sd <- colSDs(dev.z.score, na.rm = T)/sqrt(n.sims)
-  quantile.rmse.sd <- colSDs(dev.quantile, na.rm = T)/sqrt(n.sims)
+  # subdivide by sample size
+  lik.mean = matrix(NA, nrow = L, ncol = J)
+  lik.sd = matrix(NA, nrow = L, ncol = J)
+  for(j in seq(J)){
+    res.tmp = as.matrix(res[,j,])
+    lik.mean[,j]= colMeans(res.tmp, na.rm = T)
+    lik.sd[,j] = colSDs(res.tmp, na.rm = T)
+  }
+  lik.sd = lik.sd/sqrt(n.sims) # standard error of the mean function.
 
 
-  res.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
-                                      rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (cov.adj.)", length(n.set)),
-                                      rep("DNOISE (T.L.)", length(n.set)),
-                                      rep("DNOISE (Bootstrap)", length(n.set)),
-                                      rep("Z Score", length(n.set)),
-                                      rep("Quantile", length(n.set))),
-                         "n" = c(n.set,n.set,n.set,
-                                 n.set,n.set,n.set, n.set),
-                         "bias" = c(cc.mean.bias,mean.bias, mean.bias.cov.adj,
-                                    mean.bias.true.latent, mean.bias.bootstrap, z.score.mean.bias,quantile.bias),
-                         "rmse" = c(cc.rmse,rmse,rmse.cov.adj,
-                                    rmse.true.latent, rmse.bootstrap,
-                                    z.score.rmse,quantile.rmse),
-                         "rmse_sd" = c(cc.rmse.sd,rmse.sd,rmse.cov.adj.sd,
-                                       rmse.true.latent.sd,
-                                       rmse.true.latent.sd,
-                                       z.score.rmse.sd,quantile.rmse.sd))
 
 
-  plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
-    geom_line()  #+
-  #geom_line(aes(x = n, y = rmse, color = method)) #+
-  #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))
+  lik.mean.vec = c(lik.mean[,1]/(-max(lik.mean[,1])),
+                   lik.mean[,2]/(-max(lik.mean[,2])),
+                   lik.mean[,3]/(-max(lik.mean[,3])),
+                   lik.mean[,4])/(-max(lik.mean[,4]))
+  block.1 <- (lik.mean[,1] - min(lik.mean[,1]))/(max(lik.mean[,1])-min(lik.mean[,1]))
+  block.2 <- (lik.mean[,2] - min(lik.mean[,2]))/(max(lik.mean[,2])-min(lik.mean[,2]))
+  block.3 <- (lik.mean[,3] - min(lik.mean[,3]))/(max(lik.mean[,3])-min(lik.mean[,3]))
+  block.4 <- (lik.mean[,4] - min(lik.mean[,4]))/(max(lik.mean[,4])-min(lik.mean[,4]))
 
-  plt.bias
+  lik.mean.scaled.vec = c(block.1,block.2,block.3,block.4)
+  block.1 <- (lik.sd[,1])/(max(lik.mean[,1])-min(lik.mean[,1]))
+  block.2 <- (lik.sd[,2])/(max(lik.mean[,2])-min(lik.mean[,2]))
+  block.3 <- (lik.sd[,3])/(max(lik.mean[,3])-min(lik.mean[,3]))
+  block.4 <- (lik.sd[,4])/(max(lik.mean[,4])-min(lik.mean[,4]))
 
-  png(filename = "plots/sim_binomial_bias.png",
-      width = png.width, height = png.height, res = png.res)
+  lik.sd.scaled.vec = c(block.1,block.2,block.3,block.4)
 
-  plt.bias
-  # Close the pdf file
-  dev.off()
+  res.data <- data.frame("SampleSize" = c(rep(paste0("n = ", n.seq[1]), L),
+                                          rep(paste0("n = ", n.seq[2]), L),
+                                          rep(paste0("n = ", n.seq[3]), L),
+                                          rep(paste0("n = ", n.seq[4]), L)),
+                         "mu" = c(mu.set,mu.set,mu.set,mu.set),
+                         "lik.mean" = c(lik.mean[,1], lik.mean[,2], lik.mean[,3], lik.mean[,4]),
+                         "lik.sd" = c(lik.sd[,1], lik.sd[,2], lik.sd[,3], lik.sd[,4]),
+                         "lik.mean.scaled" = lik.mean.scaled.vec,
+                         "lik.sd.scaled" = lik.sd.scaled.vec)
 
-  plt.rmse <- ggplot(res.data, aes(x = log(n), y = log(rmse), color = method)) +
+  res.data$SampleSize <- factor(res.data$SampleSize, levels = paste0("n = ", n.seq))
+
+  plt.mu <- ggplot(res.data, aes(x = mu, y = lik.mean.scaled, color = SampleSize)) +
     geom_line() +
-    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))
+    geom_ribbon(aes(ymin = lik.mean.scaled - 2*lik.sd.scaled, ymax = lik.mean.scaled + 2*lik.sd.scaled, fill = SampleSize),alpha=0.3) +
+    ggtitle(paste0(kernel, " Kernel Cross Validation")) +
+    xlab("Mu") +
+    ylab("Normalized CV Likelihood")
+    #geom_errorbar(aes(ymin = lik.mean.scaled - 2*lik.sd.scaled, ymax = lik.mean.scaled + 2*lik.sd.scaled))
 
-  plt.rmse
-  png(filename = "plots/sim_binomial_rmse.png",
+  plt.mu
+
+  png(filename = paste0("plots/regularization_cv_sim",kernel,".png"),
       width = png.width, height = png.height, res = png.res)
 
-  plt.rmse
-  # Close the pdf file
-  dev.off()
-
-
-
-  cc.coverage <- colMeans(cover.cc, na.rm = T)
-  coverage <- colMeans(cover, na.rm = T)
-  coverage.cov.adj <- colMeans(cover.cov.adj, na.rm = T)
-  coverage.true.latent <- colMeans(cover.true.latent, na.rm = T)
-  coverage.bootstrap <- colMeans(cover.bootstrap, na.rm = T)
-  z.score.coverage <- colMeans(cover.z.score, na.rm = T)
-  quantile.coverage  <- colMeans(cover.quantile, na.rm = T)
-
-  cov.vec <- c(cc.coverage,coverage,coverage.cov.adj,
-               coverage.true.latent, coverage.bootstrap, z.score.coverage,quantile.coverage)
-  cov.error <- sqrt(cov.vec*(1 - cov.vec)/sum(!is.na(cover[,1])))
-
-  cov.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
-                                      rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (cov. adj.)", length(n.set)),
-                                      rep("DNOISE (T.L.)", length(n.set)),
-                                      rep("DNOISE (Bootstrap)", length(n.set)),
-                                      rep("Z Score", length(n.set)),
-                                      rep("Quantile", length(n.set))),
-                         "n" = c(n.set,n.set,n.set,n.set, n.set, n.set, n.set),
-                         "coverage" = cov.vec,
-                         "error" = cov.error)
-
-
-  #cov.data <- cov.data %>% filter(n != 500)
-  plt.coverage <- ggplot(cov.data, aes(x = log(n), y = coverage, color = method)) +
-    geom_line(position=position_dodge(width=0.2)) +
-    geom_errorbar(aes(ymin = coverage - 2*error, ymax = coverage + 2*error), width=0.5,
-                  linewidth=0.5, position=position_dodge(width=0.2)) +
-    geom_hline(yintercept=0.95, linetype='dotted', col = 'black')
-
-  plt.coverage
-
-  png(filename = "plots/sim_binomial_coverage.png",
-      width = png.width, height = png.height, res = png.res)
-
-  plt.coverage
+  plt.mu
   # Close the pdf file
   dev.off()
 }
