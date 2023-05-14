@@ -195,7 +195,7 @@ cw.data <- read.csv("data/NACCMMSE_to_MOCATOTS_test.csv")
 
 grid.size = 50
 mu1.set = seq(0,2, length.out = grid.size)
-mu2.set = seq(0,2, length.out = grid.size)
+mu2.set = seq(0,5, length.out = grid.size)
 
 mu.grid = expand.grid(mu1.set, mu2.set)
 J = nrow(mu.grid)
@@ -240,16 +240,23 @@ results = cbind(mu.grid, res)
 results = as.data.frame(results)
 colnames(results) = c("mu1", "mu2", "ce")
 sim.idx = which(!is.na(results$ce))
-
+results <- results[sim.idx,]
 saveRDS(results, paste0("data/mmse_moca_conversion_mu_results",id,".rds"))
+
 
 
 plot.results = F
 
 if(plot.results){
-  ggplot(data, aes(mu1, mu2, fill= ce)) +
+  results = readRDS(paste0("data/mmse_moca_conversion_mu_results",1,".rds"))
+  for(i in seq(2,100)){
+    res.tmp <-readRDS(paste0("data/mmse_moca_conversion_mu_results",i,".rds"))
+    results <- rbind(results, res.tmp)
+  }
+  results <- results[!is.na(results$ce),]
+  ggplot(data = results, aes(mu1, mu2, fill= ce)) +
     geom_tile() +
-    scale_fill_gradient(low="green", high="red", limits=c(min(data$ce), max(data$ce)))
+    scale_fill_gradient(low="green", high="red", limits=c(min(results$ce), max(results$ce)))
 }
 
 
