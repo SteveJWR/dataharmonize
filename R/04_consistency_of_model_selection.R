@@ -14,6 +14,7 @@ if(slurm_arrayid == ""){
 }
 
 set.seed(id)
+
 if(id %% 2 == 1){
   kernel="Gaussian"
   ker.true <- gaussian_kernel
@@ -25,19 +26,19 @@ if(id %% 2 == 1){
 R.bins = 1000
 
 # True Conditional Model
-h.true <- 2
+#h.true <- 2
 N <- 30
 
 
 two.obs.ratio = 1
-n1.seq = c(100,500,1000,5000)
+n1.seq = c(100,500,1000,5000,10000)
 n2.seq =  two.obs.ratio*n1.seq
 J = length(n1.seq)
 
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10)
-h.set <- c(seq(2,6,length.out = 5))
+h.set <- c(seq(1,6,length.out = 6))
 H = length(h.set)
 
 if(kernel == "Gaussian"){
@@ -66,7 +67,6 @@ for(h in seq(H)){
     n1 = n1.seq[j]
     n2 = n2.seq[j]
 
-
     for(sim in seq(n.sims)){
       cat(paste0("Simulation ", sim, "/",n.sims), end = "\r")
       gamma <- c(rbeta((1/3)*(n1 + n2),alpha1,alpha2),rbeta((2/3)*(n1 + n2),alpha2,alpha1))
@@ -76,7 +76,7 @@ for(h in seq(H)){
       Y <- simulate_test_cond(obs.set = c(rep(1,n1), rep(2,n2)),cond.true ,gamma)
       model <- error_model_selection_bivariate(cond.set,Y,R.bins,cond.names)
       i.max <- which.max(model$lik_vals)
-      res[sim,j, h] <- TRUE*(i.max == i.true) + FALSE*(i.max != i.true)
+      res[sim,j, h] <- abs(h.set[i.max]  - h.true)
     }
   }
 }
@@ -98,12 +98,12 @@ if(make.plots){
 
   kernel = "Exponential" #"Exponential", "Gaussian"
   # grid.parameters
-  n.seq = c(100,500,1000,5000)
+  n.seq = c(100,500,1000,5000,10000)
   J = length(n.seq)
 
 
   # grid for the values of h
-  h.set <- c(seq(2,6,length.out = 5))
+  h.set <- c(seq(1,6,length.out = 6))
   H = length(h.set)
 
 
@@ -133,8 +133,8 @@ if(make.plots){
 
   res.data <- data.frame("SampleSize" = sample.size.vec,
                          "TrueModel" = correct.model.vec,
-                         "CorrectModel" = correct.mean.vec,
-                         "CorrectModel_sd" = correct.se.vec)
+                         "ModelDev" = correct.mean.vec,
+                         "ModelDev_sd" = correct.se.vec)
 
 
   plt.mod.sel <- ggplot(res.data, aes(x = log(SampleSize), y = CorrectModel, group = TrueModel,color = TrueModel)) +
