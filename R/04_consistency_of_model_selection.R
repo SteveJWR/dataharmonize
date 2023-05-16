@@ -26,22 +26,18 @@ R.bins = 1000
 
 # True Conditional Model
 h.true <- 2
-
-
 N <- 30
 
 
-
-
 two.obs.ratio = 1
-n1.seq = c(50,75,100,200,500,1000)
+n1.seq = c(100,500,1000,5000)
 n2.seq =  two.obs.ratio*n1.seq
 J = length(n1.seq)
 
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10)
-h.set <- c(0.8,seq(1,5,length.out = 9))
+h.set <- c(seq(1,5,length.out = 9))
 H = length(h.set)
 
 if(kernel == "Gaussian"){
@@ -55,7 +51,7 @@ if(kernel == "Gaussian"){
 
 
 # correct model selection fraction of sims.
-n.sims <- 5
+n.sims <- 2
 res <- matrix(NA, nrow= n.sims, ncol =length(n1.seq))
 res <- array(NA, c(n.sims, length(n1.seq), H))
 
@@ -102,12 +98,12 @@ if(make.plots){
 
   kernel = "Gaussian" #"Exponential", "Gaussian"
   # grid.parameters
-  n.seq = c(100,200,500,1000)
+  n.seq = c(100,500,1000,5000)
   J = length(n.seq)
 
 
   # grid for the values of h
-  h.set <- c(0.8,seq(1,5,length.out = 9))
+  h.set <- c(seq(1,5,length.out = 9))
   H = length(h.set)
 
 
