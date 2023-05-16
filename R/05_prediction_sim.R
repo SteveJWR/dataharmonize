@@ -277,7 +277,7 @@ for(sim in sim.start:n.sims){
 
 
 
-
+    #TODO: In theory we could have a different kernel function to smooth over for each scale
     cond.pred.cov.adj <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
                                                 Y.train,Z.train,cond.y,cond.z,
                                                 mu.y/n,mu.z/n,ref.cols, ker.set, R.bins = 1000)
@@ -462,9 +462,9 @@ if(make.plots){
                   rep("Gaussian h = 3", J),
                   rep("Gaussian h = 9", J),
                   rep("Binomial", J), #unreg
-                  rep("Dnoise Gaussian h = 1", J), #unreg
-                  rep("Dnoise Gaussian h = 3", J), #unreg
-                  rep("Dnoise Gaussian h = 9", J), #unreg
+                  rep("Gaussian h = 1", J), #unreg
+                  rep("Gaussian h = 3", J), #unreg
+                  rep("Gaussian h = 9", J), #unreg
                   rep("Z score Matching", J)
                   )
   reg.vec <- c(rep("Yes", J),
@@ -493,21 +493,32 @@ if(make.plots){
 
   res.data.no.z <- res.data %>% filter(method != "Z score Matching")
   res.data.z  <- res.data %>% filter(method == "Z score Matching")
-  plt.predictions <- ggplot(res.data.no.z, aes(x = SampleSize, y = ce,
+  res.data.z$ce <- as.numeric(res.data.z$ce)
+  #res.data.z$SampleSize
+
+
+  plt.predictions <- ggplot(res.data, aes(x = SampleSize, y = ce,
                                           group = interaction(method, regularization),
                                           color = method, linetype = regularization)) +
     geom_line() +
-    geom_point() +
+    #geom_point() +
     geom_errorbar(aes(ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
+    #geom_line(data = res.data.z, aes(x = SampleSize, y = ce, group = method), color = "black", linetype = 4) +
     #geom_line(data = res.data.z, aes(x = SampleSize, y = ce,linetype = 3, group = method, color = "black")) +
     #geom_point(data = res.data.z, aes(x = SampleSize, y = ce,group = method, color = "black")) +
     #geom_errorbar(data = res.data.z, aes(x = SampleSize, ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
     ggtitle("Cross Entropy Of Competing Methods") +
     xlab("Sample Size (n)") +
     ylab("Cross Entropy") +
+    scale_color_manual(values = c("No Covariates" = "orange",
+                                  "Binomial" = "olivedrab4",
+                                  "Gaussian h = 1" = "deepskyblue1",
+                                  "Gaussian h = 3" = "deepskyblue3",
+                                  "Gaussian h = 9" = "deepskyblue4",
+                                  "Z score Matching" = "black")) +
     coord_cartesian(
       xlim =c(0,5000),
-      ylim = c(2.5,3.5)
+      ylim = c(2.5,6.5)
     ) # can change the window for smoother plots
 
 
@@ -523,59 +534,45 @@ if(make.plots){
   # Close the pdf file
   dev.off()
 
-  plt.rmse <- ggplot(res.data, aes(x = log(n), y = log(rmse), color = method)) +
+
+
+  plt.predictions <- ggplot(res.data, aes(x = SampleSize, y = ce,
+                                          group = interaction(method, regularization),
+                                          color = method, linetype = regularization)) +
     geom_line() +
-    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))
+    #geom_point() +
+    geom_errorbar(aes(ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
+    #geom_line(data = res.data.z, aes(x = SampleSize, y = ce, group = method), color = "black", linetype = 4) +
+    #geom_line(data = res.data.z, aes(x = SampleSize, y = ce,linetype = 3, group = method, color = "black")) +
+    #geom_point(data = res.data.z, aes(x = SampleSize, y = ce,group = method, color = "black")) +
+    #geom_errorbar(data = res.data.z, aes(x = SampleSize, ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
+    ggtitle("Cross Entropy Of Competing Methods") +
+    xlab("Sample Size (n)") +
+    ylab("Cross Entropy") +
+    scale_color_manual(values = c("No Covariates" = "orange",
+                                  "Binomial" = "olivedrab4",
+                                  "Gaussian h = 1" = "deepskyblue1",
+                                  "Gaussian h = 3" = "deepskyblue3",
+                                  "Gaussian h = 9" = "deepskyblue4",
+                                  "Z score Matching" = "black")) +
+    coord_cartesian(
+      xlim =c(0,5000),
+      ylim = c(2.5,3.5)
+    ) # can change the window for smoother plots
 
-  plt.rmse
-  png(filename = "plots/sim_binomial_rmse.png",
+
+  #geom_line(aes(x = n, y = rmse, color = method)) #+
+  #
+
+  plt.predictions
+
+  png(filename = "plots/prediction_sim_cross_entropy_zoom.png",
       width = png.width, height = png.height, res = png.res)
 
-  plt.rmse
+  plt.predictions
   # Close the pdf file
   dev.off()
 
-
-
-  cc.coverage <- colMeans(cover.cc, na.rm = T)
-  coverage <- colMeans(cover, na.rm = T)
-  coverage.cov.adj <- colMeans(cover.cov.adj, na.rm = T)
-  coverage.true.latent <- colMeans(cover.true.latent, na.rm = T)
-  coverage.bootstrap <- colMeans(cover.bootstrap, na.rm = T)
-  z.score.coverage <- colMeans(cover.z.score, na.rm = T)
-  quantile.coverage  <- colMeans(cover.quantile, na.rm = T)
-
-  cov.vec <- c(cc.coverage,coverage,coverage.cov.adj,
-               coverage.true.latent, coverage.bootstrap, z.score.coverage,quantile.coverage)
-  cov.error <- sqrt(cov.vec*(1 - cov.vec)/sum(!is.na(cover[,1])))
-
-  cov.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
-                                      rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (cov. adj.)", length(n.set)),
-                                      rep("DNOISE (T.L.)", length(n.set)),
-                                      rep("DNOISE (Bootstrap)", length(n.set)),
-                                      rep("Z Score", length(n.set)),
-                                      rep("Quantile", length(n.set))),
-                         "n" = c(n.set,n.set,n.set,n.set, n.set, n.set, n.set),
-                         "coverage" = cov.vec,
-                         "error" = cov.error)
-
-
-  #cov.data <- cov.data %>% filter(n != 500)
-  plt.coverage <- ggplot(cov.data, aes(x = log(n), y = coverage, color = method)) +
-    geom_line(position=position_dodge(width=0.2)) +
-    geom_errorbar(aes(ymin = coverage - 2*error, ymax = coverage + 2*error), width=0.5,
-                  linewidth=0.5, position=position_dodge(width=0.2)) +
-    geom_hline(yintercept=0.95, linetype='dotted', col = 'black')
-
-  plt.coverage
-
-  png(filename = "plots/sim_binomial_coverage.png",
-      width = png.width, height = png.height, res = png.res)
-
-  plt.coverage
-  # Close the pdf file
-  dev.off()
 
 }
 

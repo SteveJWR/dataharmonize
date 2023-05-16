@@ -22,7 +22,7 @@ w_age = (all_tests$NACCAGE>59) & (all_tests$NACCAGE <= 85)
 all_tests = all_tests[w_cog&w_age,]
 n = nrow(all_tests)
 
-score1 <- "NACCMMSE" #
+score1 <- "NACCMMSE" # TODO: Can use other examples of conversion here
 score2 <- "MOCATOTS" #
 
 # Maxima of each test scores
@@ -113,11 +113,11 @@ colnames(tests.y1.train)[1] <- "y"
 colnames(tests.z1.train)[1] <- "z"
 
 
-write.csv(tests.y2.val,"Data/NACCMMSE_validation.csv", row.names = F)
-write.csv(tests.z2.val,"Data/MOCATOTS_validation.csv", row.names = F)
+write.csv(tests.y2.val,"data/NACCMMSE_validation.csv", row.names = F)
+write.csv(tests.z2.val,"data/MOCATOTS_validation.csv", row.names = F)
 
-write.csv(tests.y1.train,"Data/NACCMMSE_training.csv", row.names = F)
-write.csv(tests.z1.train,"Data/MOCATOTS_training.csv", row.names = F)
+write.csv(tests.y1.train,"data/NACCMMSE_training.csv", row.names = F)
+write.csv(tests.z1.train,"data/MOCATOTS_training.csv", row.names = F)
 
 
 
@@ -157,48 +157,7 @@ cw.clean <- cw.clean[,cw.columns]
 colnames(cw.clean) <- c("y","z","age","sex","educ")
 cw.clean <- categorize(cw.clean)
 
-write.csv(cw.clean,"Data/NACCMMSE_to_MOCATOTS_test.csv", row.names = F)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+write.csv(cw.clean,"data/NACCMMSE_to_MOCATOTS_test.csv", row.names = F)
 
 
 

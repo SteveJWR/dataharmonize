@@ -52,6 +52,7 @@ cond.z.names <- c(paste0("Gaussain: h=", h.set), paste0("Exponential: h=", h.set
 
 estimate.cond = F
 if(estimate.cond){
+
   cond.model.y.select <- error_model_selection_bivariate(cond.y.set, Y.two.obs, R.bins, cond.y.names, verbose = T)
   print(cond.model.y.select$opt_model_name)
   plot(cond.model.y.select$lik_vals)
@@ -248,20 +249,90 @@ saveRDS(results, paste0("data/mmse_moca_conversion_mu_results",id,".rds"))
 plot.results = F
 
 if(plot.results){
+  library(ggpubr)
+  png.width = 1200
+  png.height = 1000
+  png.res = 200
+
+
   results = readRDS(paste0("data/mmse_moca_conversion_mu_results",1,".rds"))
   for(i in seq(2,100)){
     res.tmp <-readRDS(paste0("data/mmse_moca_conversion_mu_results",i,".rds"))
     results <- rbind(results, res.tmp)
   }
   results <- results[!is.na(results$ce),]
-  ggplot(data = results, aes(mu1, mu2, fill= ce)) +
-    geom_tile() +
-    scale_fill_gradient(low="green", high="red", limits=c(min(results$ce), max(results$ce)))
+  j.min = which.min(results$ce)
+
+  plt <- ggplot(data = results, aes(mu1, mu2, fill= ce)) +
+                geom_tile() +
+                scale_fill_gradient(low="yellow", high="blue",
+                                    limits=c(min(results$ce), max(results$ce))) +
+    geom_point(aes(x=0.01,y=0.01),colour="red") +
+    geom_point(aes(x=results[j.min,1],y=results[j.min,2]),colour="black") +
+    theme_bw() +
+    ggtitle("Smoothing Parameter Conversion Cross Entropy") +
+    xlab("\u03bc 1") +
+    ylab("\u03bc 2")
+
+
+  png(filename = "plots/mmse_moca_conversion_prediction.png",
+      width = png.width, height = png.height, res = png.res)
+
+  plt
+  # Close the pdf file
+  dev.off()
+
+
+  # naive conversion comparison
+  compare.conversions = T
+
+  if(compare.conversions){
+    mean.y = mean(y.train$y, na.rm = T)
+    mean.z = mean(z.train$z, na.rm = T)
+    sd.y = sd(y.train$y, na.rm = T)
+    sd.z = sd(z.train$z, na.rm = T)
+
+    y.test <- cw.data$y
+    z.test <- cw.data$z
+
+    naive.pred <- normalScoreConversionProb(y.test,mean.y,sd.y,mean.z,sd.z, Nz)
+
+
+    mu.y1 = 0.01
+    mu.y2 = results[j.min,1]
+
+    mu.z1 = 0.01
+    mu.z2 = results[j.min,2]
+
+    ref.cols = c("age", "group")
+    unif.4 <- scale_kernel(uniform_kernel,4)
+    unif.0.5 <- scale_kernel(uniform_kernel,0.5) # groups the categories in the other case
+    ker.set <- list(unif.4,unif.0.5)
+    cond.pred.cov.adj <- predictedDistributions(cw.data,y.test,
+                                                y.train,z.train,cond.y,cond.z,
+                                                mu.y1,mu.z1,ref.cols, ker.set, R.bins = 1000)
+
+    # picking the optimal parameters from the crosswalk smoothed dataset.
+    cond.pred.cov.adj.cw.opt <- predictedDistributions(cw.data,y.test,
+                                                       y.train,z.train,cond.y,cond.z,
+                                                       mu.y2,mu.z2,ref.cols, ker.set, R.bins = 1000)
+
+    ce.naive = empirical_cross_entropy(naive.pred,z.test)
+    ce.test = empirical_cross_entropy(cond.pred.cov.adj,z.test)
+    ce.cw.opt = empirical_cross_entropy(cond.pred.cov.adj.cw.opt,z.test)
+    print(c(ce.naive,ce.test,ce.cw.opt))
+  }
+
 }
 
 
 
+
+
+
 # include the comparison naive conversion
+
+
 
 
 

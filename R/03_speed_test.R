@@ -6,7 +6,7 @@ library(dnoiseR)
 slurm_arrayid <- Sys.getenv('SLURM_ARRAY_TASK_ID')
 print(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 if(slurm_arrayid == ""){
-  id = 1
+  id = 2
 } else {
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
@@ -127,7 +127,7 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  kernel = "Gaussian" # "Gaussian" # "Exponential"
+  kernel = "Exponential" # "Gaussian" # "Exponential"
 
   # grid.parameters
   # Conditional Models
@@ -186,43 +186,63 @@ if(make.plots){
   plot.data$N <- factor(plot.data$N, levels = N.set)
   plot.data$Time = as.numeric(plot.data$Time)
   plot.data$KL = as.numeric(plot.data$KL)
-
+  plot.data$Bandwidth = as.numeric(plot.data$Bandwidth)
   for(k in seq(K)){
     for(l in seq(L)){
+
         cond.idx = k
         mu.tmp = mu.set[l]
+
         plot.data.tmp <- plot.data %>% filter(mu == mu.tmp, Dist == cond.idx)
 
         title <- paste0("Time Comparison ", kernel, " Kernel : \u03bc = ", mu.tmp," --- Conditional: ",cond.idx )
-        plot.time <-  ggplot(plot.data.tmp, aes(Bandwidth, log(Time), group = interaction(N, Method),
+        plot.time <-  ggplot(plot.data.tmp, aes(log(Bandwidth), log(Time), group = interaction(N, Method),
                        color = N, linetype = Method)) +
           geom_line() + geom_point() +
           ggtitle(title) +
-          xlab("Bandwidth (h)")
-        plot.time
+          xlab("log-Bandwidth (h)") +
+          ylab("log-Time (s)")
 
-        png(filename = paste0("plots/time_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
-            width = png.width, height = png.height, res = png.res)
+        # png(filename = paste0("plots/time_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
+        #     width = png.width, height = png.height, res = png.res)
+        #
+        # plot.time
+        # # Close the pdf file
+        # dev.off()
+        ggsave(
+          filename = paste0("plots/time_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
+          plot = plot.time,
+          scale = 1,
+          width = png.width,
+          height = png.height,
+          units = "px",
+          dpi = png.res
+        )
 
-        plot.time
-        # Close the pdf file
-        dev.off()
         title <- paste0("Fit Comparison ", kernel, " Kernel : \u03bc = ", mu.tmp," --- Conditional: ",cond.idx )
 
-        plot.lik <-  ggplot(plot.data.tmp, aes(x = Bandwidth, y = KL, group = interaction(N, Method),
+        plot.lik <-  ggplot(plot.data.tmp, aes(x = log(Bandwidth), y = KL, group = interaction(N, Method),
                                                 color = N, linetype = Method)) +
           geom_line() + geom_point() +
           ggtitle(title) +
-          xlab("Bandwidth (h)")
-        plot.lik
+          xlab("log-Bandwidth (h)") +
+          ylab("log-Time (s)")
 
-
-        png(filename = paste0("plots/fit_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
-            width = png.width, height = png.height, res = png.res)
-
-        plot.lik
-        # Close the pdf file
-        dev.off()
+        # png(filename = paste0("plots/fit_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
+        #     width = png.width, height = png.height, res = png.res)
+        #
+        # plot.lik
+        # # Close the pdf file
+        # dev.off()
+        ggsave(
+          filename = paste0("plots/fit_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
+          plot = plot.lik,
+          scale = 1,
+          width = png.width,
+          height = png.height,
+          units = "px",
+          dpi = png.res
+        )
       }
   }
 }

@@ -106,7 +106,7 @@ saveRDS(res2, paste0("data/feasibility_test_order_2_results_",kernel,ceiling(id/
 
 
 
-make.plots = T
+make.plots = F
 
 if(make.plots){
   library(ggpubr)
