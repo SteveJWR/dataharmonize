@@ -41,6 +41,7 @@ J = length(n1.seq)
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10)
+h.set <- c(0.8,seq(1,5,length.out = 11))
 H = length(h.set)
 
 if(kernel == "Gaussian"){
