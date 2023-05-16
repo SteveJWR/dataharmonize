@@ -460,7 +460,7 @@ if(include.bootstrap){
 
 
 
-make.plots = T
+make.plots = F
 
 if(make.plots){
   library(ggpubr)
@@ -552,7 +552,7 @@ if(make.plots){
                                       rep("DNOISE", length(n.set)),
                                       rep("DNOISE (cov.adj.)", length(n.set)),
                                       rep("DNOISE (T.L.)", length(n.set)),
-                                      rep("DNOISE (Bootstrap)", length(n.set)),
+                                      rep("DNOISE (Oracle)", length(n.set)),
                                       rep("Z Score", length(n.set)),
                                       rep("Quantile", length(n.set))),
                          "n" = c(n.set,n.set,n.set,
@@ -611,7 +611,7 @@ if(make.plots){
   cov.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
                                       rep("DNOISE (cov. adj.)", length(n.set)),
-                                      rep("DNOISE (T.L.)", length(n.set)),
+                                      rep("DNOISE (Oracle)", length(n.set)),
                                       rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
                                       rep("Quantile", length(n.set))),
