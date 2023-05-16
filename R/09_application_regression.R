@@ -87,13 +87,19 @@ colnames(clean.tests) <- c("y","z", "age", "sex", "educ", "id", "cdr", "ne4s", "
 clean.tests$y <- ifelse(clean.tests$y >= 0 & clean.tests$y <= Ny,  clean.tests$y, NA)
 clean.tests$z <- ifelse(clean.tests$z >= 0 & clean.tests$z <= Nz,  clean.tests$z, NA)
 clean.tests$id <- as.factor(clean.tests$id)
-clean.tests$sex <- clean.tests$sex - 1
+
 
 missing.both <- is.na(clean.tests$y) & is.na(clean.tests$z) & is.na(clean.tests$age)
 
 clean.tests <- clean.tests[!missing.both,]
 clean.tests <- clean.tests[clean.tests$educ < 50,] # error variable here, make sure this does not include the 99 error code
 clean.tests <- categorize(clean.tests)
+
+mean(clean.tests$sex == 0 & clean.tests$educ <= 16)
+
+
+table(clean.tests$group)
+
 clean.tests$educ_binary <- 1*(clean.tests$educ >= 16)
 clean.tests$cdr_group <- case_when(
   clean.tests$cdr == 0 ~ "0",
@@ -115,6 +121,8 @@ clean.tests <- clean.tests[!no.tests,]
 time.lag.3y <- as.Date("2003/01/01") - as.Date("2000/01/01")
 
 clean.tests.lag.3y <- lag_pair_visit_label(clean.tests, time.lag.3y)
+
+summary(clean.tests.lag.3y)
 
 y.ref.3y <- clean.tests.lag.3y$y
 z.ref.3y <- clean.tests.lag.3y$z
@@ -566,10 +574,31 @@ if(plot.results){
 
 
 
-#### 8 year trends
+#### 8-10 year trends
 time.lag.8y <- as.Date("2008/01/01") - as.Date("2000/01/01")
 time.window <- as.Date("2002/01/01") - as.Date("2000/01/01") # error of time window between times is 2 year
 clean.tests.lag.8y <- lag_pair_visit_label(clean.tests, time.lag.8y, time.window = time.window)
+
+summary(clean.tests.lag.8y)
+
+mean(clean.tests.lag.8y$age)
+sd(clean.tests.lag.8y$age)
+
+mean(clean.tests.lag.8y$sex)
+sd(clean.tests.lag.8y$sex)
+
+
+mean(clean.tests.lag.8y$educ_binary)
+sd(clean.tests.lag.8y$educ_binary)
+
+table(clean.tests.lag.8y$cdr_group)/nrow(clean.tests.lag.8y)
+table(clean.tests.lag.8y$ne4s_group)/nrow(clean.tests.lag.8y)
+
+
+
+colMeans(as.data.frame(clean.tests.lag.8y))
+
+
 y.ref.8y <- clean.tests.lag.8y$y
 z.ref.8y <- clean.tests.lag.8y$z
 

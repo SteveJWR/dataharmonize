@@ -551,8 +551,8 @@ if(make.plots){
   res.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
                                       rep("DNOISE (Cov. Adj.)", length(n.set)),
-                                      rep("DNOISE (T.L.)", length(n.set)),
                                       rep("DNOISE (Oracle)", length(n.set)),
+                                      rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
                                       rep("Quantile", length(n.set))),
                          "n" = c(n.set,n.set,n.set,
@@ -569,7 +569,8 @@ if(make.plots){
 
 
   plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
-    geom_line()  #+
+    geom_line() +
+    ggtitle("Bias of Regression Estimate") #+
   #geom_line(aes(x = n, y = rmse, color = method)) #+
   #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))
 
@@ -584,7 +585,8 @@ if(make.plots){
 
   plt.rmse <- ggplot(res.data, aes(x = log(n), y = log(rmse), color = method)) +
     geom_line() +
-    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))
+    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))+
+    ggtitle("RMSE of Regression Estimate")
 
   plt.rmse
   png(filename = "plots/sim_binomial_rmse.png",
@@ -625,7 +627,8 @@ if(make.plots){
     geom_line(position=position_dodge(width=0.2)) +
     geom_errorbar(aes(ymin = coverage - 2*error, ymax = coverage + 2*error), width=0.5,
                   linewidth=0.5, position=position_dodge(width=0.2)) +
-    geom_hline(yintercept=0.95, linetype='dotted', col = 'black')
+    geom_hline(yintercept=0.95, linetype='dotted', col = 'black') +
+    ggtitle("Coverage of Regression Estimate")
 
   plt.coverage
 

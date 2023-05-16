@@ -3,21 +3,21 @@
 
 # the new selection criteria
 
-
+rm(list = ls())
 library(CVXR)
-#library(tensorr)
-source("R/01_functions.R")
+library(dnoiseR)
+#source("R/01_functions.R")
 
 # N = 30
-# n = 600 
+# n = 600
 # R.bins <- 1000
 # cond <- conditional_mkm(N, gaussian_kernel, 2)
-# 
+#
 # cond2 <- conditional_mkm(N, exponential_kernel, 5)
 # cond3 <- generate_cond_binomial(N)
-# 
+#
 # cond.set <- list(cond, cond2, cond3)
-# 
+#
 # Y <- matrix(NA, nrow = n, ncol = 2)
 # Y[,1] <- rbinom(n,N, 0.5)
 # Y[seq(n/2),2] <- rbinom(n/2,N, 0.5)
@@ -41,13 +41,13 @@ population_bivariate_likelihood <- function(Y, A.matrix, A.tensor, mixture, mu, 
   if(missing(weights)){
     weights <- rep(1, nrow(Y))
   }
-  
+
   if(missing(mu)){
     mu = 0
   }
   count.vector <- rep(0,N + 1)
   count.matrix <- matrix(0,N+1, N+1)
-  
+
   #NA's can be allowed in second column only
   for(i in seq(nrow(Y))){
     if(!any(is.na(Y[i,]))){
@@ -56,15 +56,15 @@ population_bivariate_likelihood <- function(Y, A.matrix, A.tensor, mixture, mu, 
       count.vector[Y[i,1] + 1] <- count.vector[Y[i,1] + 1] + weights[i]
     }
   }
-  
+
   p.ma <- as.vector(A.matrix %*% mixture)
   p.ma2 <- tensor_prod(A.tensor,mixture)
-  
+
   logl <-  sum(t(count.matrix) %*% log(p.ma)) + sum(diag( t(count.matrix) %*% log(p.ma2))) + mu*uniform_ce(mixture)
-  
+
   return(logl)
- 
-  
+
+
 }
 
 
@@ -85,7 +85,7 @@ error_model_selection <- function(cond.set, Y, R.bins, cond.names){
   i.max <- which.max(res)
   out.list <- list("opt_model" = cond.set[[i.max]], "lik_vals" = res, "opt_model_name" = cond.names[i.max])
   return(out.list)
-} 
+}
 
 
 mu_selection <- function(mu.set, cond, Y, R.bins){
@@ -102,7 +102,7 @@ mu_selection <- function(mu.set, cond, Y, R.bins){
   i.min <- which.min(res)
   out.list <- list("opt.mu" = mu.set[[i.min]], "ce" = res)
   return(out.list)
-} 
+}
 
 mu_selection <- function(mu.set, cond, Y.train, Y.val, R.bins){
   res <- rep(NA, length(mu.set))
@@ -118,12 +118,12 @@ mu_selection <- function(mu.set, cond, Y.train, Y.val, R.bins){
   i.min <- which.min(res)
   out.list <- list("opt.mu" = mu.set[[i.min]], "ce" = res)
   return(out.list)
-} 
+}
 
 
 
 
-# includes regression component implicitly through the mixture. 
+# includes regression component implicitly through the mixture.
 conversion_cross_entropy <- function(Y, A.matrix, A.tensor, mixture){
   if(any(is.na(Y))){
     stop("Y cannot have any missing values")
@@ -131,7 +131,7 @@ conversion_cross_entropy <- function(Y, A.matrix, A.tensor, mixture){
   if(is.vector(mixture)){
     p.ma <- as.vector(A.matrix %*% mixture)
     p.ma2 <- tensor_prod(A.tensor, mixture)
-    # first observation is row, second observation is column 
+    # first observation is row, second observation is column
     p.ma.cond <- p.ma2/p.ma
     out <- 0
     for(i in seq(nrow(Y))){
@@ -151,7 +151,7 @@ conversion_cross_entropy <- function(Y, A.matrix, A.tensor, mixture){
       mixture.row <- as.vector(mixture[i,])
       p.ma <- as.vector(A.matrix %*% mixture.row)
       p.ma2 <- tensor_prod(A.tensor, mixture.row)
-      # first observation is row, second observation is column 
+      # first observation is row, second observation is column
       p.ma.cond <- p.ma2/p.ma
       out <- out - log(p.ma.cond[Y[i,1] + 1,Y[i,2] + 1])
     }
@@ -167,7 +167,7 @@ conversion_cross_entropy_2 <- function(Y, A.matrix, A.tensor, mixture){
   if(is.vector(mixture)){
     p.ma <- as.vector(A.matrix %*% mixture)
     p.ma2 <- tensor_prod(A.tensor, mixture)
-    # first observation is row, second observation is column 
+    # first observation is row, second observation is column
     p.ma.cond <- p.ma2/p.ma
     out <- 0
     for(i in seq(nrow(Y))){
@@ -187,7 +187,7 @@ conversion_cross_entropy_2 <- function(Y, A.matrix, A.tensor, mixture){
       mixture.row <- as.vector(mixture[i,])
       p.ma <- as.vector(A.matrix %*% mixture.row)
       p.ma2 <- tensor_prod(A.tensor, mixture.row)
-      # first observation is row, second observation is column 
+      # first observation is row, second observation is column
       p.ma.cond <- p.ma2/p.ma
       out <- out - log(p.ma2[Y[i,1] + 1,Y[i,2] + 1])
     }
@@ -197,11 +197,11 @@ conversion_cross_entropy_2 <- function(Y, A.matrix, A.tensor, mixture){
 
 
 
-# measuring the difference in likelihood value to the true 
-# i.e. we want the true maximizer to be no more than 
+# measuring the difference in likelihood value to the true
+# i.e. we want the true maximizer to be no more than
 
 select_R <- function(Y, cond, mu = 0.001, R.max = 30000, threshold = 10**(-4), stepsize = 5){
-  
+
   # generally 100 is quite smooth
   R.start <- 100
   R.prev <- R.start
@@ -211,8 +211,8 @@ select_R <- function(Y, cond, mu = 0.001, R.max = 30000, threshold = 10**(-4), s
   lat.list <- estimate_mixing_numeric_2(Y,A.matrix,A.tensor, mu = mu)
   mixture <- lat.list$latent
   exact.lik <- population_bivariate_likelihood(Y,A.matrix,A.tensor,mixture, mu = mu, weights = NULL)
-  
-  
+
+
   while(ratio > threshold){
     A.matrix <- compute_A_matrix_2(R.prev, cond)
     A.tensor <- compute_A_tensor_2(R.prev, cond)
@@ -220,9 +220,9 @@ select_R <- function(Y, cond, mu = 0.001, R.max = 30000, threshold = 10**(-4), s
     mixture <- lat.list$latent
     approx.lik <- population_bivariate_likelihood(Y,A.matrix,A.tensor,mixture, mu = mu, weights = NULL)
     ratio <- (exact.lik - approx.lik)/(abs(exact.lik))
-    
+
     R.step <- round(exp((stepsize*log(R.prev) + log(R.max))/(stepsize + 1)))
-    R.prev <- R.prev + R.step 
+    R.prev <- R.prev + R.step
     cat(paste("Relative error ratio:", ratio, "Num Bins: ", R.prev), end = "\r")
   }
   R.prev <- R.prev - R.step
@@ -243,7 +243,7 @@ compute_A_matrix_2 <- function(R.bins, cond){
     return(out)
   })
   return(A.out)
-} 
+}
 
 
 compute_A_tensor_2 <- function(R.bins, cond){
@@ -263,8 +263,8 @@ compute_A_tensor_2 <- function(R.bins, cond){
 # A.tensor <- compute_A_tensor_2(R.bins, cond)
 
 estimate_mixing_numeric_2 <- function(Y, A.matrix, A.tensor, mu, weights){
-  
-  
+
+
   if(ncol(Y) != 2){
     stop("Y must have 2 columns" )
   }
@@ -278,17 +278,17 @@ estimate_mixing_numeric_2 <- function(Y, A.matrix, A.tensor, mu, weights){
     mu = 0
   }
   n.obs <- nrow(Y)
-  N <- nrow(A.matrix) - 1 # number of scores 
+  N <- nrow(A.matrix) - 1 # number of scores
   R.bins <- ncol(A.matrix)
   count.vector <- rep(0,N + 1)
   count.matrix <- matrix(0,N+1, N+1)
-  
-  
+
+
   A.ten.mat <- A.tensor
   # converting the dimension of the tensor to a matrix
-  
+
   dim(A.ten.mat) <- c((N + 1)^2,R.bins)
-  
+
   #NA's can be allowed in second column only
   for(i in seq(nrow(Y))){
     if(!any(is.na(Y[i,]))){
@@ -296,33 +296,33 @@ estimate_mixing_numeric_2 <- function(Y, A.matrix, A.tensor, mu, weights){
     } else {
       count.vector[Y[i,1] + 1] <- count.vector[Y[i,1] + 1] + weights[i]
     }
-    
+
   }
-  # need to vectorize the matrix counts 
+  # need to vectorize the matrix counts
   count.mat.vec <- count.matrix
   dim(count.mat.vec) <- (N + 1)^2
-  
-  theta <- Variable(R.bins, name = "latent discretized distribution") # values of the weight vector 
+
+  theta <- Variable(R.bins, name = "latent discretized distribution") # values of the weight vector
 
   data.obj1 <-  t(count.vector) %*% log(A.matrix %*% theta)
   data.obj2 <-  t(count.mat.vec) %*% log(A.ten.mat %*% theta)
-  pen.obj <- n.obs*(mu/R.bins)*t(rep(1, R.bins)) %*% log(theta) 
-  
+  pen.obj <- n.obs*(mu/R.bins)*t(rep(1, R.bins)) %*% log(theta)
+
   constraints <- list(
     #obs.dist == A.matrix %*% theta,
     sum(theta) <= 1#,
     #mu/(R.bins*(1 + mu)) <= theta
   )
-  
+
   obj.arg <- data.obj1 + data.obj2 + pen.obj
   obj <- Maximize(obj.arg)
   prob <- Problem(obj, constraints)
-  
-  
+
+
   #value(theta) <- rep(1/R.bins, R.bins) # initial guess of a uniform distribution
   result <- solve(prob, solver = "MOSEK")
   #result <- solve(p, verbose = TRUE)
-  
+
   p.m <- result$getValue(theta)
   p.ma <- A.matrix %*% p.m
   out.list <- list("latent" = p.m, "observed" = p.ma)
@@ -380,7 +380,7 @@ estimate_mixing_numeric_regression <- function(Y,A.matrix,A.tensor, mu, X, ker.s
     for(j in match.idx){
       mixture.block[j,] <- as.vector(mix$latent)
     }
-    
+
   }
   return(mixture.block)
 }
@@ -388,10 +388,10 @@ estimate_mixing_numeric_regression <- function(Y,A.matrix,A.tensor, mu, X, ker.s
 
 
 # TOD0: speed up conversion_cross_entropy ? ()
-# TODO: Add an automatic splitting function to 
-# create a train and test set in the mu.selection and regression function. 
+# TODO: Add an automatic splitting function to
+# create a train and test set in the mu.selection and regression function.
 mu_selection_regression <- function(Y, X, cond, mu.set, R.bins, ker.set){
-  res <- rep(NA, length(mu.set)) 
+  res <- rep(NA, length(mu.set))
   A.matrix <- compute_A_matrix_2(R.bins, cond)
   A.tensor <- compute_A_tensor_2(R.bins, cond)
   complete.rows <- !(is.na(Y[,1])|is.na(Y[,2]))
@@ -406,10 +406,10 @@ mu_selection_regression <- function(Y, X, cond, mu.set, R.bins, ker.set){
   i.max <- which.max(res)
   out.list <- list("opt.mu" = mu.set[[i.max]], "ce" = res)
   return(out.list)
-} 
+}
 
 mu_selection_regression <- function(Y.train, X.train, Y.val, X.val, cond, mu.set, R.bins, ker.set){
-  res <- rep(NA, length(mu.set)) 
+  res <- rep(NA, length(mu.set))
   A.matrix <- compute_A_matrix_2(R.bins, cond)
   A.tensor <- compute_A_tensor_2(R.bins, cond)
   #complete.rows <- !(is.na(Y[,1])|is.na(Y[,2]))
@@ -418,21 +418,21 @@ mu_selection_regression <- function(Y.train, X.train, Y.val, X.val, cond, mu.set
   for(i in seq(length(mu.set))){
     cat(paste("Model",i,"/",length(mu.set)), end = "\r")
     mu <- mu.set[[i]]
-    mixture.block <- estimate_mixing_numeric_regression(Y.train, A.matrix, 
-                                                        A.tensor, mu = mu, 
-                                                        X.train, ker.set, 
+    mixture.block <- estimate_mixing_numeric_regression(Y.train, A.matrix,
+                                                        A.tensor, mu = mu,
+                                                        X.train, ker.set,
                                                         X.val)
-    
-    
-    
+
+
+
     res[i] <- conversion_cross_entropy(Y.val,A.matrix,A.tensor,mixture.block)
     #res[i] <- conversion_cross_entropy_2(Y.val,A.matrix,A.tensor,mixture.block)
-    
+
   }
   i.min <- which.min(res)
   out.list <- list("opt.mu" = mu.set[[i.min]], "ce" = res)
   return(out.list)
-} 
+}
 
 
 
@@ -448,7 +448,7 @@ quantile_map <- function(mixture,n.q){
     idx <- min(which(cdf > q.seq[j]))
     qf[j] <- grid[idx]
   }
-  qf[is.na(qf)] <- max(qf, na.rm = T) 
+  qf[is.na(qf)] <- max(qf, na.rm = T)
   return(qf)
 }
 
@@ -458,7 +458,7 @@ compute_joint_tensor <- function(R.bins,cond.y,cond.z){
   #grid <- array(grid,c(length(grid),1,1))
   Ny <- length(cond.y(0.5)) - 1
   Nz <- length(cond.z(0.5)) - 1
-  
+
   A.out <- vapply(grid,function(x){
     out.y <- cond.y(x)
     out.z <- cond.z(x)
@@ -493,9 +493,9 @@ conditional_imputation_model <- function(cond.y,cond.z,mixture.y,mixture.z,n.q,R
   # corresponds to weights placed at each quantile
   q.s <- rep(1/R.bins,length.out = R.bins)
   p.yz <- tensor_prod(A.joint.tensor, q.s)
-  
+
   #A.mat.y <- compute_A_matrix_2(R.bins,cond.y)
-  
+
   p.y <- rowSums(p.yz)
   p.z.cond.y <- p.yz/p.y
   return(p.z.cond.y)
@@ -551,33 +551,33 @@ reference_regression <- function(X.ref, Y.train, X.train,  A.matrix,A.tensor, mu
 
 impute_dataset_2 <- function(X.ref,y.ref,n.impute,Y.train,Z.train,cond.y,cond.z,mu.y,mu.z,ker.set,R.bins,n.q){
   X.un <- unique_X(X.ref)
-  
+
   Ny <- length(cond.y(.5)) - 1
   Nz <- length(cond.z(.5)) - 1
-  
+
   A.matrix.y <- compute_A_matrix_2(R.bins,cond.y)
   A.tensor.y <- compute_A_tensor_2(R.bins,cond.y)
-  
+
   A.matrix.z <- compute_A_matrix_2(R.bins,cond.z)
   A.tensor.z <- compute_A_tensor_2(R.bins,cond.z)
-  
+
   ## Think about how to generalize this
   # These should always be the same
   y.tr <- Y.train[,c("y1","y2")]
   z.tr <- Z.train[,c("z1","z2")]
-  
-  # 
+
+  #
   ref.cols <- colnames(X.ref)
   X.train.Y <- Y.train[,ref.cols]
   X.train.Z <- Z.train[,ref.cols]
-  
+
   cond.block <- array(NA, c(nrow(X.ref),Ny + 1,Nz + 1))
   for(i in seq(nrow(X.un))){
     cat(paste("Unique mixture estimate:",i,"/",nrow(X.un)), end = "\r")
     x <- as.numeric(X.un[i,])
     weights.y <- weight_vec(x,X.train.Y,ker.set)
     weights.z <- weight_vec(x,X.train.Z,ker.set)
-    
+
     mix.y <- estimate_mixing_numeric_2(y.tr, A.matrix, A.tensor, mu.y, weights.y)
     mix.z <- estimate_mixing_numeric_2(z.tr, A.matrix, A.tensor, mu.z, weights.z)
     mixture.y <- mix.y$latent
@@ -588,29 +588,29 @@ impute_dataset_2 <- function(X.ref,y.ref,n.impute,Y.train,Z.train,cond.y,cond.z,
     }
     match.idx <- which(apply(X.ref, 1, function(z) return(all(z == x))))
     # this piece is incorrect
-    # Fixed this error in the assignment of the 
-    
-    # for loop and only assigning 
+    # Fixed this error in the assignment of the
+
+    # for loop and only assigning
     # is pretty simple and fast
     for(id in match.idx){
       cond.block[id,,] <- p.z.cond.y.slice
     }
-    
+
   }
-  
+
   cond.mat <- matrix(NA,nrow(X.ref),Nz + 1)
   #relatively fast
   for(j in seq(length(y.ref))){
-    # the offset of the block 
-    # when y.ref = 0 strange results occur 
+    # the offset of the block
+    # when y.ref = 0 strange results occur
     if(!is.na(y.ref[j])){
       cond.mat[j,] <- cond.block[j,y.ref[j] + 1,]
     } else {
       cond.mat[j,] <- rep(1/(Nz + 1), Nz + 1)
     }
-    
+
   }
-  
+
   # much faster than before
   Z.imp <- matrix(NA,length(y.ref),n.impute)
   for(k in 1:length(y.ref)){
@@ -621,7 +621,7 @@ impute_dataset_2 <- function(X.ref,y.ref,n.impute,Y.train,Z.train,cond.y,cond.z,
     } else {
       Z.imp[k,] <- rep(NA,n.impute)
     }
-    
+
   }
   return(Z.imp)
 }
@@ -632,14 +632,14 @@ impute_regression <- function(formula,Z.full, X.Y.id,Z.impute){
   bin.naive.fit <- gee(formula,
                        id = id, data = Z.full,corstr = "exchangeable")
   n.vars <- length(bin.naive.fit$coefficients)
-  
+
   Vg <- matrix(0,n.vars,n.vars)
   impute.betas <- matrix(0,n.vars,n.impute)
   for(j in 1:n.impute){
     impute.block <- cbind(as.numeric(Z.impute[,j]),X.Y.id)
-    
+
     colnames(impute.block)[1] = "z"
-    
+
     impute.block$bin_z <- 1*(impute.block$z >= 26)
     impute.data <- rbind(impute.block, Z.full)
     fit <- gee(formula,
@@ -649,11 +649,11 @@ impute_regression <- function(formula,Z.full, X.Y.id,Z.impute){
   }
   beta.impute.mean <- rowMeans(impute.betas)
   names(beta.impute.mean) <- names(fit$coefficients)
-  
+
   Vb <- matrix(0,n.vars,n.vars)
   mean.centered.betas <- impute.betas - beta.impute.mean
   #colnames(mean.centered.betas) <- names(fit$coefficients)
-  
+
   rownames(mean.centered.betas) <- names(fit$coefficients)
   colnames(Vb) <- names(fit$coefficients)
   rownames(Vb) <- names(fit$coefficients)
@@ -663,18 +663,18 @@ impute_regression <- function(formula,Z.full, X.Y.id,Z.impute){
     Vb <- Vb + outer(mean.centered.betas[,j], mean.centered.betas[,j], "*")
   }
   Vb <- (1/(n.impute - 1))*Vb
-  
+
   rubin.var <- Vg + (1 + 1/n.impute)*Vb
-  
+
   z.scores <- beta.impute.mean/sqrt(diag(rubin.var))
   cc.z.scores <- bin.naive.fit$coefficients/sqrt(diag(bin.naive.fit$robust.variance))
-  out.list <- list("coefficients" = beta.impute.mean, 
-                   "variance" = rubin.var, 
+  out.list <- list("coefficients" = beta.impute.mean,
+                   "variance" = rubin.var,
                    "z-scores" = z.scores,
-                   "cc-coefficients" = bin.naive.fit$coefficients, 
-                   "cc-variance" = bin.naive.fit$robust.variance, 
+                   "cc-coefficients" = bin.naive.fit$coefficients,
+                   "cc-variance" = bin.naive.fit$robust.variance,
                    "cc-z-scores" = cc.z.scores)
-  
+
   return(out.list)
 }
 
@@ -686,14 +686,14 @@ impute_logistic_regression <- function(formula,Z.full, X.Y.id,Z.impute){
   bin.naive.fit <- gee(formula,
                        id = id, data = Z.full,corstr = "exchangeable", family = binomial(link = "logit"))
   n.vars <- length(bin.naive.fit$coefficients)
-  
+
   Vg <- matrix(0,n.vars,n.vars)
   impute.betas <- matrix(0,n.vars,n.impute)
   for(j in 1:n.impute){
     impute.block <- cbind(as.numeric(Z.impute[,j]),X.Y.id)
-    
+
     colnames(impute.block)[1] = "z"
-    
+
     impute.block$bin_z <- 1*(impute.block$z >= 26)
     impute.data <- rbind(impute.block, Z.full)
     fit <- gee(formula,
@@ -703,11 +703,11 @@ impute_logistic_regression <- function(formula,Z.full, X.Y.id,Z.impute){
   }
   beta.impute.mean <- rowMeans(impute.betas)
   names(beta.impute.mean) <- names(fit$coefficients)
-  
+
   Vb <- matrix(0,n.vars,n.vars)
   mean.centered.betas <- impute.betas - beta.impute.mean
   #colnames(mean.centered.betas) <- names(fit$coefficients)
-  
+
   rownames(mean.centered.betas) <- names(fit$coefficients)
   colnames(Vb) <- names(fit$coefficients)
   rownames(Vb) <- names(fit$coefficients)
@@ -717,46 +717,46 @@ impute_logistic_regression <- function(formula,Z.full, X.Y.id,Z.impute){
     Vb <- Vb + outer(mean.centered.betas[,j], mean.centered.betas[,j], "*")
   }
   Vb <- (1/(n.impute - 1))*Vb
-  
+
   rubin.var <- Vg + (1 + 1/n.impute)*Vb
-  
+
   z.scores <- beta.impute.mean/sqrt(diag(rubin.var))
   cc.z.scores <- bin.naive.fit$coefficients/sqrt(diag(bin.naive.fit$robust.variance))
-  out.list <- list("coefficients" = beta.impute.mean, 
-                   "variance" = rubin.var, 
+  out.list <- list("coefficients" = beta.impute.mean,
+                   "variance" = rubin.var,
                    "z-scores" = z.scores,
-                   "cc-coefficients" = bin.naive.fit$coefficients, 
-                   "cc-variance" = bin.naive.fit$robust.variance, 
+                   "cc-coefficients" = bin.naive.fit$coefficients,
+                   "cc-variance" = bin.naive.fit$robust.variance,
                    "cc-z-scores" = cc.z.scores)
-  
+
   return(out.list)
 }
 
 # requires specific names on the data frame
-# 
+# Perhaps come back to this
 lag_pairs_impute_regression <- function(formula,Z.full, X.Y.id,Z.impute){
-  Z.1 <- Z.full %>% filter(visit == 1) 
-  Z.2 <- Z.full %>% filter(visit == 2) 
-  
+  Z.1 <- Z.full %>% filter(visit == 1)
+  Z.2 <- Z.full %>% filter(visit == 2)
+
   z.diff <- Z.1$z - Z.2$z
-   
-  ######### TODO: finish the editing of this function 
-  
-  
-  
+
+  ######### TODO: finish the editing of this function
+
+
+
   n.impute <- ncol(Z.impute)
   n.vars <- length(formula) + 1
   bin.naive.fit <- gee(formula,
                        id = id, data = Z.full,corstr = "exchangeable")
   n.vars <- length(bin.naive.fit$coefficients)
-  
+
   Vg <- matrix(0,n.vars,n.vars)
   impute.betas <- matrix(0,n.vars,n.impute)
   for(j in 1:n.impute){
     impute.block <- cbind(as.numeric(Z.impute[,j]),X.Y.id)
-    
+
     colnames(impute.block)[1] = "z"
-    
+
     impute.block$bin_z <- 1*(impute.block$z >= 26)
     impute.data <- rbind(impute.block, Z.full)
     fit <- gee(formula,
@@ -766,11 +766,11 @@ lag_pairs_impute_regression <- function(formula,Z.full, X.Y.id,Z.impute){
   }
   beta.impute.mean <- rowMeans(impute.betas)
   names(beta.impute.mean) <- names(fit$coefficients)
-  
+
   Vb <- matrix(0,n.vars,n.vars)
   mean.centered.betas <- impute.betas - beta.impute.mean
   #colnames(mean.centered.betas) <- names(fit$coefficients)
-  
+
   rownames(mean.centered.betas) <- names(fit$coefficients)
   colnames(Vb) <- names(fit$coefficients)
   rownames(Vb) <- names(fit$coefficients)
@@ -780,18 +780,18 @@ lag_pairs_impute_regression <- function(formula,Z.full, X.Y.id,Z.impute){
     Vb <- Vb + outer(mean.centered.betas[,j], mean.centered.betas[,j], "*")
   }
   Vb <- (1/(n.impute - 1))*Vb
-  
+
   rubin.var <- Vg + (1 + 1/n.impute)*Vb
-  
+
   z.scores <- beta.impute.mean/sqrt(diag(rubin.var))
   cc.z.scores <- bin.naive.fit$coefficients/sqrt(diag(bin.naive.fit$robust.variance))
-  out.list <- list("coefficients" = beta.impute.mean, 
-                   "variance" = rubin.var, 
+  out.list <- list("coefficients" = beta.impute.mean,
+                   "variance" = rubin.var,
                    "z-scores" = z.scores,
-                   "cc-coefficients" = bin.naive.fit$coefficients, 
-                   "cc-variance" = bin.naive.fit$robust.variance, 
+                   "cc-coefficients" = bin.naive.fit$coefficients,
+                   "cc-variance" = bin.naive.fit$robust.variance,
                    "cc-z-scores" = cc.z.scores)
-  
+
   return(out.list)
 }
 
@@ -808,34 +808,34 @@ imputed_5ydiff <- function(formula,Z.impute,X.ref){
     naive.fit$coefficients = NULL
     naive.fit$robust.variance = NULL
     impute.data <- cbind(as.numeric(Z.impute[,1]),X.ref)
-    
+
     colnames(impute.data)[1] = "z"
-    
+
     false.fit <- gee(formula, id = id, data = impute.data)
     n.vars <- length(false.fit$coefficients)
   } else {
     naive.fit <- gee(formula, id = id, data = Z.full)
-    
+
     n.vars <- length(naive.fit$coefficients)
   }
   Vg <- matrix(0,n.vars,n.vars)
   impute.betas <- matrix(0,n.vars,n.impute)
   for(j in 1:n.impute){
     impute.data <- cbind(as.numeric(Z.impute[,j]),X.ref)
-    
+
     colnames(impute.data)[1] = "z"
-    
+
     fit <- gee(formula, id = id, data = impute.data)
     Vg <- Vg + fit$robust.variance
     impute.betas[,j] <- fit$coefficients
   }
   beta.impute.mean <- rowMeans(impute.betas)
   names(beta.impute.mean) <- names(fit$coefficients)
-  
+
   Vb <- matrix(0,n.vars,n.vars)
   mean.centered.betas <- impute.betas - beta.impute.mean
   #colnames(mean.centered.betas) <- names(fit$coefficients)
-  
+
   rownames(mean.centered.betas) <- names(fit$coefficients)
   colnames(Vb) <- names(fit$coefficients)
   rownames(Vb) <- names(fit$coefficients)
@@ -845,18 +845,18 @@ imputed_5ydiff <- function(formula,Z.impute,X.ref){
     Vb <- Vb + outer(mean.centered.betas[,j], mean.centered.betas[,j], "*")
   }
   Vb <- (1/(n.impute - 1))*Vb
-  
+
   rubin.var <- Vg + (1 + 1/n.impute)*Vb
-  
+
   z.scores <- beta.impute.mean/sqrt(diag(rubin.var))
   cc.z.scores <- naive.fit$coefficients/sqrt(diag(naive.fit$robust.variance))
-  out.list <- list("coefficients" = beta.impute.mean, 
-                   "variance" = rubin.var, 
+  out.list <- list("coefficients" = beta.impute.mean,
+                   "variance" = rubin.var,
                    "z-scores" = z.scores,
-                   "cc-coefficients" = naive.fit$coefficients, 
-                   "cc-variance" = naive.fit$robust.variance, 
+                   "cc-coefficients" = naive.fit$coefficients,
+                   "cc-variance" = naive.fit$robust.variance,
                    "cc-z-scores" = cc.z.scores)
-  
+
   return(out.list)
 }
 
@@ -867,7 +867,7 @@ impute_dataset_3 <- function(joined.tests,y.ref,n.impute,y.train,z.train,cond.y,
   colnames(X.ref2) <- c("age", "group")
   y.ref1 <- joined.tests$y
   y.ref2 <- joined.tests$y_2
-  
+
   Z1.impute <- impute_dataset_2(X.ref1,y.ref1,n.impute,y.train,z.train,cond.y,cond.z,mu.y,mu.z,ker.set,R.bins,n.q)
   Z2.impute <- impute_dataset_2(X.ref2,y.ref2,n.impute,y.train,z.train,cond.y,cond.z,mu.y,mu.z,ker.set,R.bins,n.q)
   idx1 <- which(!is.na(joined.tests$z))
@@ -882,13 +882,13 @@ fit_to_table <- function(fit){
   n = length(fit$coefficients)
   out.table <- matrix(NA,nrow = n, ncol = 6)
   rownames(out.table) = names(fit$coefficients)
-  colnames(out.table) = c("C.C. coef", 
+  colnames(out.table) = c("C.C. coef",
                           "C.C. sd",
                           "C.C. Zscore",
-                          "Imputation coef", 
+                          "Imputation coef",
                           "Imputation sd",
                           "Imputation Zscore")
-  
+
   out.table[,1] <-  fit$`cc-coefficients`
   out.table[,2] <-  sqrt(diag(fit$`cc-variance`))
   out.table[,3] <-  fit$`cc-z-scores`
@@ -898,37 +898,37 @@ fit_to_table <- function(fit){
   return(out.table)
 }
 
-# I think that the generalized imputation idea is a bit too rough. 
-# 
+# I think that the generalized imputation idea is a bit too rough.
+#
 
 
 
-# 
+#
 time.lag <- as.Date("2006/01/01") - as.Date("2000/01/01")
 # assume X is the cleaned test, this requires the knowledge of outcomes
-# default X is the time window 
+# default X is the time window
 lag_pair_visit_label <- function(X,time.lag, time.window = as.Date("2001/01/01") - as.Date("2000/01/01")){
-  
-  X.out <- X %>% 
-    group_by(id) %>% 
-    arrange(date, by_group = T) %>% 
-    mutate(date_diff = date - min(date))  
-  
+
+  X.out <- X %>%
+    group_by(id) %>%
+    arrange(date, by_group = T) %>%
+    mutate(date_diff = date - min(date))
+
   # only take first day or time lagged day
-  X.out <- X.out %>% 
+  X.out <- X.out %>%
     filter((date_diff >= time.lag & date_diff <= time.lag + time.window) | date_diff == 0)
-  
-  X.out <- X.out %>% 
-   group_by(id) %>% 
-   arrange(date, by_group = T) %>% 
-   mutate(visit = row_number()) 
-  
-  X.out <- X.out %>% 
+
+  X.out <- X.out %>%
+   group_by(id) %>%
+   arrange(date, by_group = T) %>%
+   mutate(visit = row_number())
+
+  X.out <- X.out %>%
     filter(visit <= 2)
-  
-  X.out <- X.out %>% 
-    group_by(id) %>% 
-    mutate(num_visits = max(visit)) 
+
+  X.out <- X.out %>%
+    group_by(id) %>%
+    mutate(num_visits = max(visit))
   X.out <- X.out %>% filter(num_visits == 2)
   return(X.out)
 }

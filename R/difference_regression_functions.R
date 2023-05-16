@@ -1,9 +1,9 @@
 
 
 categorize <- function(data){
-  tmp <- data %>% mutate(group = ifelse(((sex == 1) & (educ <= 16)), 1,
-                                        ifelse(((sex == 2) & (educ <= 16)), 2,
-                                               ifelse(((sex == 1) & (educ > 16)), 3, 4))))
+  tmp <- data %>% mutate(group = ifelse(((sex == 1) & (educ < 16)), 1,
+                                        ifelse(((sex == 2) & (educ < 16)), 2,
+                                               ifelse(((sex == 1) & (educ >= 16)), 3, 4))))
   #tmp <- tmp[, !names(tmp) %in% c('sex','educ')]
   tmp$group <- factor(tmp$group, levels = c(1,2,3,4))
   return(tmp)

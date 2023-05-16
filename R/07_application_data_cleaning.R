@@ -1,8 +1,9 @@
 # Here we begin to clean the data
 # We will convert the MMSE and the MOCA scores
 
-source("R/01_functions.R")
-
+#source("R/01_functions.R")
+#TODO: Update the
+source("R/difference_regression_functions.R")
 
 
 library(dplyr)
