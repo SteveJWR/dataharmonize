@@ -102,7 +102,7 @@ if(make.plots){
 
   kernel = "Gaussian" #"Exponential", "Gaussian"
   # grid.parameters
-  n.seq = c(50,75,100,200,500,1000)
+  n.seq = c(100,200,500,1000)
   J = length(n.seq)
 
 
@@ -112,10 +112,10 @@ if(make.plots){
 
 
   res <- readRDS(paste0("data/model_selection_results_",kernel,1, ".rds"))
-
-  for(j in seq(2,100)){
+  bad.ids <-c(6,38)
+  for(j in seq(2,50)){
     file.name <- paste0("data/model_selection_results_",kernel,j, ".rds")
-    if(file.exists(file.name)){
+    if(file.exists(file.name) & ! j %in% bad.ids){
       res.tmp <- readRDS(file.name)
       res <- abind(res, res.tmp, along = 1)
     }
