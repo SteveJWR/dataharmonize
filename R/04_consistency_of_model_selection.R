@@ -141,12 +141,12 @@ if(make.plots){
                          "CorrectModel_sd" = correct.se.vec)
 
 
-  plt.mod.sel <- ggplot(res.data, aes(x = SampleSize, y = CorrectModel, group = TrueModel,color = TrueModel)) +
+  plt.mod.sel <- ggplot(res.data, aes(x = log(SampleSize), y = CorrectModel, group = TrueModel,color = TrueModel)) +
     geom_line() +
     geom_point() +
     geom_errorbar(aes(ymin = CorrectModel - 2*CorrectModel_sd, ymax = CorrectModel + 2*CorrectModel_sd)) +
     ggtitle(paste0(kernel, " Kernel Model Selection")) +
-    xlab("Sample Size") +
+    xlab("log-Sample Size") +
     ylab("Probability of Correct Model")
   #geom_errorbar(aes(ymin = lik.mean.scaled - 2*lik.sd.scaled, ymax = lik.mean.scaled + 2*lik.sd.scaled))
 
