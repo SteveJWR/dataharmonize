@@ -103,7 +103,7 @@ if(make.plots){
 
 
   # grid for the values of h
-  h.set <- c(seq(1,5,length.out = 9))
+  h.set <- c(seq(1,5,length.out = 5))
   H = length(h.set)
 
 
