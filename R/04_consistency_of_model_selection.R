@@ -41,7 +41,7 @@ J = length(n1.seq)
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10)
-h.set <- c(0.8,seq(1,5,length.out = 11))
+h.set <- c(0.8,seq(1,5,length.out = 9))
 H = length(h.set)
 
 if(kernel == "Gaussian"){
@@ -102,10 +102,14 @@ if(make.plots){
 
   kernel = "Gaussian" #"Exponential", "Gaussian"
   # grid.parameters
-  n.seq = c(10,50,100,500,1000) #c(100,500,1000,5000)
+  n.seq = c(50,75,100,200,500,1000)
   J = length(n.seq)
-  h.set <- c(0.8,1,2,3,5,10)
+
+
+  # grid for the values of h
+  h.set <- c(0.8,seq(1,5,length.out = 9))
   H = length(h.set)
+
 
   res <- readRDS(paste0("data/model_selection_results_",kernel,1, ".rds"))
 
