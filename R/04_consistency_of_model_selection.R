@@ -38,7 +38,7 @@ J = length(n1.seq)
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10)
-h.set <- c(seq(1,6,length.out = 6))
+h.set <- c(seq(1,11,length.out = 6))
 H = length(h.set)
 
 if(kernel == "Gaussian"){
@@ -103,13 +103,13 @@ if(make.plots){
 
 
   # grid for the values of h
-  h.set <- c(seq(1,6,length.out = 6))
+  h.set <- c(seq(1,11,length.out = 6))
   H = length(h.set)
 
 
   res <- readRDS(paste0("data/model_selection_results_",kernel,1, ".rds"))
-  bad.ids <- c() #c(6,38)
-  for(j in seq(2,500)){
+  bad.ids <- c(372,391) #c(6,38)
+  for(j in seq(2,100)){
     file.name <- paste0("data/model_selection_results_",kernel,j, ".rds")
     if(file.exists(file.name) & ! j %in% bad.ids){
       res.tmp <- readRDS(file.name)
@@ -137,10 +137,10 @@ if(make.plots){
                          "ModelDev_sd" = correct.se.vec)
 
 
-  plt.mod.sel <- ggplot(res.data, aes(x = log(SampleSize), y = CorrectModel, group = TrueModel,color = TrueModel)) +
+  plt.mod.sel <- ggplot(res.data, aes(x = log(SampleSize), y = ModelDev, group = TrueModel,color = TrueModel)) +
     geom_line() +
     geom_point() +
-    geom_errorbar(aes(ymin = CorrectModel - 2*CorrectModel_sd, ymax = CorrectModel + 2*CorrectModel_sd)) +
+    geom_errorbar(aes(ymin = ModelDev - 2*ModelDev_sd, ymax = ModelDev + 2*ModelDev_sd)) +
     ggtitle(paste0(kernel, " Kernel Model Selection")) +
     xlab("log-Sample Size") +
     ylab("Probability of Correct Model")
