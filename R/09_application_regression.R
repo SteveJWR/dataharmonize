@@ -1,8 +1,5 @@
 rm(list = ls())
 
-
-
-
 # suppose that we want to study the impact on education
 # and the aging decline across normal individuals
 # Our initial data
@@ -148,7 +145,7 @@ list.3y.cw.opt <- ImputeOutcomeDifferences(clean.tests.lag.3y,
 list.3y.nocov <- ImputeOutcomeDifferences(clean.tests.lag.3y,
                                           y.ref.3y,z.ref.3y,n.impute,
                                           y.train,z.train,cond.y,cond.z,
-                                          mu.y,mu.z,
+                                          mu.y1,mu.z1,
                                           R.bins = 1000, verbose = T)
 
 
@@ -162,20 +159,21 @@ list.3y.quantile <- QuantileMatchDifferences(clean.tests.lag.3y,
 
 
 
+#outcome is the difference of scores
 z.score.dat.3y <- cbind(list.3y.zscore$Z, list.3y.zscore$X)
-colnames(z.score.dat.3y)[1] = "scorediff"
+colnames(z.score.dat.3y)[1] = "outcome"
 
 quantile.dat.3y <- cbind(list.3y.quantile$Z, list.3y.quantile$X)
-colnames(quantile.dat.3y)[1] = "scorediff"
+colnames(quantile.dat.3y)[1] = "outcome"
 
-fmla <- formula(scorediff ~ age + sex + educ_binary + ne4s_group)
+fmla <- formula(outcome ~ age + sex + educ_binary + ne4s_group)
 X <- list.3y$X
 Z.imp <- list.3y$Z
 
 X.nocov <- list.3y.nocov$X
 Z.imp.nocov <- list.3y.nocov$Z
 
-fmla.1 <- formula(scorediff ~ age + sex +  educ_binary *ne4s_group + cdr_group)
+fmla.1 <- formula(outcome ~ age + sex +  educ_binary *ne4s_group + cdr_group)
 #fmla.1 <- formula(outcome ~ age)
 
 imp.reg.results.3y <- ImputationRegressionGLM(fmla.1, X, Z.imp)
@@ -227,27 +225,12 @@ if(save.boot){
   saveRDS(boot.model.3y, "data/bootstrap_regression_3y.rds")
 }
 
-#TODO: Remove these
-# formula = fmla.1
-# X.ref = clean.tests.lag.3y
-# y.ref = y.ref.3y
-# z.ref = z.ref.3y
-# n.impute
-# Y.train = y.train
-# Z.train = z.train
-# cond.y
-# cond.z
-# mu.y = mu.y1
-# mu.z = mu.z1
-# ref.cols
-# ker.set
-# R.bins = 1000
-# threshold = 5 * 10^(-5)
-# max.iter = 3
-# B.boot = 200
-# verbose = F
-#
-#
+load.boot = T
+if(load.boot){
+  boot.model.3y <- readRDS("data/bootstrap_regression_3y.rds")
+}
+
+
 
 
 
@@ -294,7 +277,7 @@ m7 <- data.frame("term" = term,
                  "std.error" = sqrt(diag(sandwich(fit.quantile))))
 m7$model = "Quantile Matching"
 
-model.coefs <- rbind(m1,m2,m3,m4,m5,m6,m7)
+model.coefs <- rbind(m1,m5,m6,m7)
 
 
 imp.reg.results.3y$`cc-coefficients`
@@ -387,7 +370,7 @@ list.6y.cw.opt <- ImputeOutcomeDifferences(clean.tests.lag.6y,
 list.6y.nocov <- ImputeOutcomeDifferences(clean.tests.lag.6y,
                                           y.ref.6y,z.ref.6y,n.impute,
                                           y.train,z.train,cond.y,cond.z,
-                                          mu.y,mu.z,
+                                          mu.y1,mu.z1,
                                           R.bins = 1000, verbose = T)
 
 
@@ -402,19 +385,19 @@ list.6y.quantile <- QuantileMatchDifferences(clean.tests.lag.6y,
 
 
 z.score.dat.6y <- cbind(list.6y.zscore$Z, list.6y.zscore$X)
-colnames(z.score.dat.6y)[1] = "scorediff"
+colnames(z.score.dat.6y)[1] = "outcome"
 
 quantile.dat.6y <- cbind(list.6y.quantile$Z, list.6y.quantile$X)
-colnames(quantile.dat.6y)[1] = "scorediff"
+colnames(quantile.dat.6y)[1] = "outcome"
 
-fmla <- formula(scorediff ~ age + sex + educ_binary + ne4s_group)
+fmla <- formula(outcome ~ age + sex + educ_binary + ne4s_group)
 X <- list.6y$X
 Z.imp <- list.6y$Z
 
 X.nocov <- list.6y.nocov$X
 Z.imp.nocov <- list.6y.nocov$Z
 
-fmla.1 <- formula(scorediff ~ age + sex +  educ_binary *ne4s_group + cdr_group)
+fmla.1 <- formula(outcome ~ age + sex +  educ_binary *ne4s_group + cdr_group)
 #fmla.1 <- formula(outcome ~ age)
 
 # Here there are no individuals with scores over an 8 year period which measured MOCA at each time
@@ -467,12 +450,16 @@ boot.model.6y$coefficients - imp.reg.results.6y$coefficients
 boot.model.6y$coefficients - imp.reg.results.6y.nocov$coefficients
 boot.model.6y$coefficients - imp.reg.results.6y.cwopt$coefficients
 
-save.boot = T
+save.boot = F
 if(save.boot){
   saveRDS(boot.model.6y, "data/bootstrap_regression_6y.rds")
 }
 
 
+load.boot = T
+if(load.boot){
+  boot.model.6y <- readRDS("data/bootstrap_regression_6y.rds")
+}
 
 
 
@@ -481,10 +468,10 @@ if(save.boot){
 term <- names(quantile.match.coefs)
 
 # complete case
-m1 <- data.frame("term" = term,
-                 "estimate" = imp.reg.results.6y$`cc-coefficients`,
-                 "std.error" = sqrt(diag(imp.reg.results.6y$`cc-variance`)))
-m1$model = "Only MOCA"
+# m1 <- data.frame("term" = term,
+#                  "estimate" = imp.reg.results.6y$`cc-coefficients`,
+#                  "std.error" = sqrt(diag(imp.reg.results.6y$`cc-variance`)))
+# m1$model = "Only MOCA"
 
 m2 <- data.frame("term" = term,
                  "estimate" = imp.reg.results.6y.nocov$`coefficients`,
@@ -519,7 +506,7 @@ m7 <- data.frame("term" = term,
 m7$model = "Quantile Matching"
 
 # no complete cases exist
-model.coefs <- rbind(m1,m2,m3,m4,m5,m6,m7)
+model.coefs <- rbind(m5,m6,m7)
 
 
 imp.reg.results.6y$`cc-coefficients`
@@ -612,7 +599,7 @@ list.8y.cw.opt <- ImputeOutcomeDifferences(clean.tests.lag.8y,
 list.8y.nocov <- ImputeOutcomeDifferences(clean.tests.lag.8y,
                                           y.ref.8y,z.ref.8y,n.impute,
                                           y.train,z.train,cond.y,cond.z,
-                                          mu.y,mu.z,
+                                          mu.y1,mu.z1,
                                           R.bins = 1000, verbose = T)
 
 
@@ -627,19 +614,19 @@ list.8y.quantile <- QuantileMatchDifferences(clean.tests.lag.8y,
 
 
 z.score.dat.8y <- cbind(list.8y.zscore$Z, list.8y.zscore$X)
-colnames(z.score.dat.8y)[1] = "scorediff"
+colnames(z.score.dat.8y)[1] = "outcome"
 
 quantile.dat.8y <- cbind(list.8y.quantile$Z, list.8y.quantile$X)
-colnames(quantile.dat.8y)[1] = "scorediff"
+colnames(quantile.dat.8y)[1] = "outcome"
 
-fmla <- formula(scorediff ~ age + sex + educ_binary + ne4s_group)
+fmla <- formula(outcome ~ age + sex + educ_binary + ne4s_group)
 X <- list.8y$X
 Z.imp <- list.8y$Z
 
 X.nocov <- list.8y.nocov$X
 Z.imp.nocov <- list.8y.nocov$Z
 
-fmla.1 <- formula(scorediff ~ age + sex +  educ_binary *ne4s_group + cdr_group)
+fmla.1 <- formula(outcome ~ age + sex +  educ_binary *ne4s_group + cdr_group)
 #fmla.1 <- formula(outcome ~ age)
 
 # Here there are no individuals with scores over an 8 year period which measured MOCA at each time
@@ -692,9 +679,14 @@ boot.model.8y$coefficients - imp.reg.results.8y$coefficients
 boot.model.8y$coefficients - imp.reg.results.8y.nocov$coefficients
 boot.model.8y$coefficients - imp.reg.results.8y.cwopt$coefficients
 
-save.boot = T
+save.boot = F
 if(save.boot){
   saveRDS(boot.model.8y, "data/bootstrap_regression_8y.rds")
+}
+
+load.boot = T
+if(load.boot){
+  boot.model.8y <- readRDS("data/bootstrap_regression_8y.rds")
 }
 
 
@@ -744,7 +736,7 @@ m7 <- data.frame("term" = term,
 m7$model = "Quantile Matching"
 
 # no complete cases exist
-model.coefs <- rbind(m2,m3,m4,m5,m6,m7)
+model.coefs <- rbind(m5,m6,m7)
 
 
 imp.reg.results.8y$`cc-coefficients`

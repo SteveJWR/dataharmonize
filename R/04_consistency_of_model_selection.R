@@ -96,14 +96,14 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  kernel = "Gaussian" #"Exponential", "Gaussian"
+  kernel = "Exponential" #"Exponential", "Gaussian"
   # grid.parameters
   n.seq = c(100,500,1000,5000)
   J = length(n.seq)
 
 
   # grid for the values of h
-  h.set <- c(seq(1,5,length.out = 5))
+  h.set <- c(seq(2,6,length.out = 5))
   H = length(h.set)
 
 

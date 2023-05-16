@@ -469,38 +469,38 @@ if(make.plots){
   png.res = 200
 
   # update this section to concatenate the results
-  dev.cc <- readRDS("data/06_dev_cc1.rds")
-  dev <- readRDS("data/06_dev1.rds")
-  dev.cov.adj <- readRDS("data/06_dev_cov_adj1.rds")
-  dev.true.latent <-  readRDS("data/06_dev_true_latent1.rds")
-  dev.z.score <- readRDS("data/06_dev_zscore1.rds")
-  dev.quantile <- readRDS("data/06_dev_quantile1.rds")
-  dev.bootstrap <- readRDS("data/06_dev_bootstrap1.rds")
+  dev.cc <- readRDS("data/06c_dev_cc1.rds")
+  dev <- readRDS("data/06c_dev1.rds")
+  dev.cov.adj <- readRDS("data/06c_dev_cov_adj1.rds")
+  dev.true.latent <-  readRDS("data/06c_dev_true_latent1.rds")
+  dev.z.score <- readRDS("data/06c_dev_zscore1.rds")
+  dev.quantile <- readRDS("data/06c_dev_quantile1.rds")
+  dev.bootstrap <- readRDS("data/06c_dev_bootstrap1.rds")
 
-  cover.cc <- readRDS("data/06_cover_cc1.rds")
-  cover <- readRDS("data/06_cover1.rds")
-  cover.cov.adj <- readRDS("data/06_cover_cov_adj1.rds")
-  cover.true.latent <-  readRDS("data/06_cover_true_latent1.rds")
-  cover.z.score <- readRDS("data/06_cover_zscore1.rds")
-  cover.quantile <- readRDS("data/06_cover_quantile1.rds")
-  cover.bootstrap <- readRDS("data/06_cover_bootstrap1.rds")
+  cover.cc <- readRDS("data/06c_cover_cc1.rds")
+  cover <- readRDS("data/06c_cover1.rds")
+  cover.cov.adj <- readRDS("data/06c_cover_cov_adj1.rds")
+  cover.true.latent <-  readRDS("data/06c_cover_true_latent1.rds")
+  cover.z.score <- readRDS("data/06c_cover_zscore1.rds")
+  cover.quantile <- readRDS("data/06c_cover_quantile1.rds")
+  cover.bootstrap <- readRDS("data/06c_cover_bootstrap1.rds")
   for(j in seq(2,200)){
 
-    dev.cc.tmp <- readRDS(paste0("data/06_dev_cc",j,".rds"))
-    dev.tmp <- readRDS(paste0("data/06_dev",j,".rds"))
-    dev.cov.adj.tmp <- readRDS(paste0("data/06_dev_cov_adj",j,".rds"))
-    dev.true.latent.tmp <- readRDS(paste0("data/06_dev_true_latent",j,".rds"))
-    dev.z.score.tmp <- readRDS(paste0("data/06_dev_zscore",j,".rds"))
-    dev.quantile.tmp <- readRDS(paste0("data/06_dev_quantile",j,".rds"))
-    dev.bootstrap.tmp <- readRDS(paste0("data/06_dev_bootstrap",j,".rds"))
+    dev.cc.tmp <- readRDS(paste0("data/06c_dev_cc",j,".rds"))
+    dev.tmp <- readRDS(paste0("data/06c_dev",j,".rds"))
+    dev.cov.adj.tmp <- readRDS(paste0("data/06c_dev_cov_adj",j,".rds"))
+    dev.true.latent.tmp <- readRDS(paste0("data/06c_dev_true_latent",j,".rds"))
+    dev.z.score.tmp <- readRDS(paste0("data/06c_dev_zscore",j,".rds"))
+    dev.quantile.tmp <- readRDS(paste0("data/06c_dev_quantile",j,".rds"))
+    dev.bootstrap.tmp <- readRDS(paste0("data/06c_dev_bootstrap",j,".rds"))
 
-    cover.cc.tmp <- readRDS(paste0("data/06_cover_cc",j,".rds"))
-    cover.tmp <- readRDS(paste0("data/06_cover",j,".rds"))
-    cover.cov.adj.tmp <- readRDS(paste0("data/06_cover_cov_adj",j,".rds"))
-    cover.true.latent.tmp <- readRDS(paste0("data/06_cover_true_latent",j,".rds"))
-    cover.z.score.tmp <- readRDS(paste0("data/06_cover_zscore",j,".rds"))
-    cover.quantile.tmp <- readRDS(paste0("data/06_cover_quantile",j,".rds"))
-    cover.bootstrap.tmp <- readRDS(paste0("data/06_cover_bootstrap",j,".rds"))
+    cover.cc.tmp <- readRDS(paste0("data/06c_cover_cc",j,".rds"))
+    cover.tmp <- readRDS(paste0("data/06c_cover",j,".rds"))
+    cover.cov.adj.tmp <- readRDS(paste0("data/06c_cover_cov_adj",j,".rds"))
+    cover.true.latent.tmp <- readRDS(paste0("data/06c_cover_true_latent",j,".rds"))
+    cover.z.score.tmp <- readRDS(paste0("data/06c_cover_zscore",j,".rds"))
+    cover.quantile.tmp <- readRDS(paste0("data/06c_cover_quantile",j,".rds"))
+    cover.bootstrap.tmp <- readRDS(paste0("data/06c_cover_bootstrap",j,".rds"))
 
     dev.cc <- rbind(dev.cc, dev.cc.tmp)
     dev <- rbind(dev, dev.tmp)
@@ -550,7 +550,7 @@ if(make.plots){
 
   res.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (cov.adj.)", length(n.set)),
+                                      rep("DNOISE (Cov. Adj.)", length(n.set)),
                                       rep("DNOISE (T.L.)", length(n.set)),
                                       rep("DNOISE (Oracle)", length(n.set)),
                                       rep("Z Score", length(n.set)),
@@ -610,7 +610,7 @@ if(make.plots){
 
   cov.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (cov. adj.)", length(n.set)),
+                                      rep("DNOISE (Cov. Adj.)", length(n.set)),
                                       rep("DNOISE (Oracle)", length(n.set)),
                                       rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
