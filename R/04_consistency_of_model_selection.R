@@ -31,14 +31,16 @@ N <- 30
 
 
 two.obs.ratio = 1
-n1.seq = c(100,500,1000,5000,10000)
-n2.seq =  two.obs.ratio*n1.seq
+one.obs.ratio = 0
+n.seq = c(100,500,1000,5000,10000)
+n1.seq = one.obs.ratio*n.seq
+n2.seq =  two.obs.ratio*n.seq
 J = length(n1.seq)
 
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10)
-h.set <- c(seq(1,11,length.out = 6))
+h.set <- c(seq(1,6,length.out = 6))
 H = length(h.set)
 
 if(kernel == "Gaussian"){
@@ -96,7 +98,7 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  kernel = "Exponential" #"Exponential", "Gaussian"
+  kernel = "Gaussian" #"Exponential", "Gaussian"
   # grid.parameters
   n.seq = c(100,500,1000,5000,10000)
   J = length(n.seq)
@@ -108,8 +110,8 @@ if(make.plots){
 
 
   res <- readRDS(paste0("data/model_selection_results_",kernel,1, ".rds"))
-  bad.ids <- c(372,391) #c(6,38)
-  for(j in seq(2,100)){
+  bad.ids <- c() #c(6,38)
+  for(j in seq(2,500)){
     file.name <- paste0("data/model_selection_results_",kernel,j, ".rds")
     if(file.exists(file.name) & ! j %in% bad.ids){
       res.tmp <- readRDS(file.name)
@@ -123,11 +125,13 @@ if(make.plots){
   correct.model.vec <- rep(paste(kernel, " Kernel h = ", h.set), each = J)
   # subdivide by sample size
   correct.mean.vec = c()
+  correct.sd.vec = c()
   for(j in seq(J)){
     res.tmp = as.matrix(res[,j,])
     correct.mean.vec = c(correct.mean.vec, colMeans(res.tmp, na.rm = T))
+    correct.sd.vec = c(correct.sd.vec, colSDs(res.tmp, na.rm = T))
   }
-  correct.sd.vec = sqrt(correct.mean.vec*(1 - correct.mean.vec))
+  #correct.sd.vec = sqrt(correct.mean.vec*(1 - correct.mean.vec))
   correct.se.vec = correct.sd.vec/sqrt(n.sims)
   sample.size.vec = rep(n.seq)
 
