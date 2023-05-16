@@ -31,8 +31,8 @@ n.sims = 5 # TODO: Change this to 500
 
 n.true <- 10**(6)
 
-Ny <- 35 # TODO: return to 15
-Nz <- 35
+Ny <- 30 # TODO: return to 15
+Nz <- 30
 
 R.bins = 1000
 
