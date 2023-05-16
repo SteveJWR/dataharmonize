@@ -37,7 +37,7 @@ J = length(n1.seq)
 
 # grid for the values of h
 h.set <- c(0.8,1,2,3,5,10)
-h.set <- c(seq(1,5,length.out = 9))
+h.set <- c(seq(1,5,length.out = 5))
 H = length(h.set)
 
 if(kernel == "Gaussian"){
@@ -108,8 +108,8 @@ if(make.plots){
 
 
   res <- readRDS(paste0("data/model_selection_results_",kernel,1, ".rds"))
-  bad.ids <-c(6,38)
-  for(j in seq(2,50)){
+  bad.ids <- c() #c(6,38)
+  for(j in seq(2,500)){
     file.name <- paste0("data/model_selection_results_",kernel,j, ".rds")
     if(file.exists(file.name) & ! j %in% bad.ids){
       res.tmp <- readRDS(file.name)
