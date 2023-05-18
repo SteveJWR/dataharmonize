@@ -127,7 +127,7 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  kernel = "Exponential" # "Gaussian" # "Exponential"
+  kernel = "Gaussian" # "Gaussian" # "Exponential"
 
   # grid.parameters
   # Conditional Models
@@ -226,7 +226,7 @@ if(make.plots){
           geom_line() + geom_point() +
           ggtitle(title) +
           xlab("log-Bandwidth (h)") +
-          ylab("log-Time (s)")
+          ylab("Likelihood")
 
         # png(filename = paste0("plots/fit_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
         #     width = png.width, height = png.height, res = png.res)

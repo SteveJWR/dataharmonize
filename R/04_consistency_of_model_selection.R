@@ -31,7 +31,7 @@ N <- 30
 
 
 two.obs.ratio = 1
-one.obs.ratio = 0
+one.obs.ratio = 1
 n.seq = c(100,500,1000,5000,10000)
 n1.seq = one.obs.ratio*n.seq
 n2.seq =  two.obs.ratio*n.seq
@@ -105,7 +105,7 @@ if(make.plots){
 
 
   # grid for the values of h
-  h.set <- c(seq(1,11,length.out = 6))
+  h.set <- c(seq(1,6,length.out = 6))
   H = length(h.set)
 
 
@@ -121,13 +121,13 @@ if(make.plots){
 
   n.sims = dim(res)[1]
 
-
+  # fix the results
   correct.model.vec <- rep(paste(kernel, " Kernel h = ", h.set), each = J)
   # subdivide by sample size
   correct.mean.vec = c()
   correct.sd.vec = c()
-  for(j in seq(J)){
-    res.tmp = as.matrix(res[,j,])
+  for(h in seq(H)){
+    res.tmp = as.matrix(res[,,h])
     correct.mean.vec = c(correct.mean.vec, colMeans(res.tmp, na.rm = T))
     correct.sd.vec = c(correct.sd.vec, colSDs(res.tmp, na.rm = T))
   }
@@ -147,7 +147,7 @@ if(make.plots){
     geom_errorbar(aes(ymin = ModelDev - 2*ModelDev_sd, ymax = ModelDev + 2*ModelDev_sd)) +
     ggtitle(paste0(kernel, " Kernel Model Selection")) +
     xlab("log-Sample Size") +
-    ylab("Probability of Correct Model")
+    ylab("Devation of (h) from Correct Model")
   #geom_errorbar(aes(ymin = lik.mean.scaled - 2*lik.sd.scaled, ymax = lik.mean.scaled + 2*lik.sd.scaled))
 
   plt.mod.sel
