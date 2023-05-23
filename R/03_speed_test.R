@@ -86,12 +86,12 @@ for(j in seq(J)){
         time3 <- Sys.time()
 
         if(mu == 0){
-          like.npem.tmp <- -kl_divergence(p.hat,model.npem$observed)
-          like.numeric.tmp <- -kl_divergence(p.hat,model.numeric$observed)
+          like.npem.tmp <- -kl_divergence(p.hat,model.npem$observed/sum(model.npem$observed))
+          like.numeric.tmp <- -kl_divergence(p.hat,model.numeric$observed/sum(model.numeric$observed))
 
         } else {
-          like.npem.tmp <- -kl_divergence(p.hat,model.npem$observed) - mu*kl_divergence(uniform.latent, model.npem$latent)
-          like.numeric.tmp <- -kl_divergence(p.hat,model.numeric$observed) - mu*kl_divergence(uniform.latent, model.numeric$latent)
+          like.npem.tmp <- -kl_divergence(p.hat,model.npem$observed/sum(model.npem$observed)) - mu*kl_divergence(uniform.latent, model.npem$latent/sum(model.npem$latent))
+          like.numeric.tmp <- -kl_divergence(p.hat,model.numeric$observed/sum(model.numeric$observed)) - mu*kl_divergence(uniform.latent, model.numeric$latent/sum(model.numeric$latent))
         }
         time.npem[j,k,i,h] <- as.numeric(difftime(time2, time1, units = "secs"))
         time.cvxr[j,k,i,h] <- as.numeric(difftime(time3, time2, units = "secs"))
