@@ -6,6 +6,7 @@ rm(list = ls())
 library(dplyr)
 library(gee)
 library(dnoiseR)
+library(sandwich)
 source("R/difference_regression_functions.R")
 
 #library(geepack)
@@ -221,14 +222,14 @@ imp.reg.results.3y.nocov$`cc-p-values`
 
 
 #naive z matching
-fit.z.score <- glm(fmla.1, data = z.score.dat.3y)
-z.score.coefs <- fit.z.score$coefficients
-z.score.coefs
+fit.z.score.3y <- glm(fmla.1, data = z.score.dat.3y)
+z.score.coefs.3y <- fit.z.score.3y$coefficients
+z.score.coefs.3y
 
 #quantile matching
-fit.quantile <- glm(fmla.1, data = quantile.dat.3y)
-quantile.match.coefs <- fit.quantile$coefficients
-quantile.match.coefs
+fit.quantile.3y <- glm(fmla.1, data = quantile.dat.3y)
+quantile.match.coefs.3y <- fit.quantile.3y$coefficients
+quantile.match.coefs.3y
 
 #####
 
@@ -236,13 +237,15 @@ quantile.match.coefs
 
 
 
-boot.model.3y <-  ImputationRegressionDifferencesGLMBootstrap(fmla.1, clean.tests.lag.3y, y.ref.3y, z.ref.3y,
-                                                           n.impute, y.train, z.train,
-                                                           cond.y, cond.z, mu.y1, mu.z1,
-                                                           ref.cols, ker.set, R.bins = 1000,
-                                                           threshold = 5 * 10^(-5), max.iter = 3,
-                                                           B.boot = 200, verbose = T)
-
+run.boot = F
+if(run.boot){
+  boot.model.3y <-  ImputationRegressionDifferencesGLMBootstrap(fmla.1, clean.tests.lag.3y, y.ref.3y, z.ref.3y,
+                                                                n.impute, y.train, z.train,
+                                                                cond.y, cond.z, mu.y1, mu.z1,
+                                                                ref.cols, ker.set, R.bins = 1000,
+                                                                threshold = 5 * 10^(-5), max.iter = 3,
+                                                                B.boot = 200, verbose = T)
+}
 
 save.boot = F
 if(save.boot){
@@ -261,7 +264,7 @@ if(load.boot){
 
 
 
-term <- names(quantile.match.coefs)
+term <- names(quantile.match.coefs.3y)
 
 # complete case
 m1 <- data.frame("term" = term,
@@ -292,21 +295,21 @@ m5$model = "DNOISe Bootstrap"
 
 
 m6 <- data.frame("term" = term,
-                 "estimate" = z.score.coefs,
-                 "std.error" = sqrt(diag(sandwich(fit.z.score))))
+                 "estimate" = z.score.coefs.3y,
+                 "std.error" = sqrt(diag(sandwich(fit.z.score.3y))))
 m6$model = "Z Score Matching"
 
 m7 <- data.frame("term" = term,
-                 "estimate" = quantile.match.coefs,
-                 "std.error" = sqrt(diag(sandwich(fit.quantile))))
+                 "estimate" = quantile.match.coefs.3y,
+                 "std.error" = sqrt(diag(sandwich(fit.quantile.3y))))
 m7$model = "Quantile Matching"
 
-model.coefs <- rbind(m1,m5,m6,m7)
+model.coefs.3y <- rbind(m1,m5,m6,m7)
 
 
 imp.reg.results.3y$`cc-coefficients`
 
-quantile.match.coefs
+quantile.match.coefs.3y
 
 ### dot and whisker plot
 plot.results = T
@@ -317,7 +320,7 @@ if(plot.results){
   png.height = 1000
   png.res = 200
 
-  p.3y <- dwplot(model.coefs, show_intercept = FALSE)
+  p.3y <- dwplot(model.coefs.3y, show_intercept = FALSE)
 
   png(filename = "plots/3_year_impute_e4_education_interaction.png",
       width = png.width, height = png.height, res = png.res)
@@ -330,23 +333,23 @@ if(plot.results){
 
 
 
-  tab.reg.3y.1 <- fit_to_table(imp.reg.results.3y)
-
-  fmla.2 <- formula(outcome ~ ne4s_group)
-  imp.reg.results.3y.2 <- ImputationRegressionGLM(fmla.2, X, Z.imp)
-  tab.reg.3y.2 <- fit_to_table(imp.reg.results.3y.2)
-
-  fmla.3 <- formula(outcome ~ educ_binary)
-  imp.reg.results.3y.3 <- ImputationRegressionGLM(fmla.3, X, Z.imp)
-  tab.reg.3y.3 <- fit_to_table(imp.reg.results.3y.3)
-
-  fmla.4 <- formula(outcome ~ sex)
-  imp.reg.results.3y.4 <- ImputationRegressionGLM(fmla.4, X, Z.imp)
-  tab.reg.3y.4 <- fit_to_table(imp.reg.results.3y.4)
-
-  fmla.5 <- formula(outcome ~ age)
-  imp.reg.results.3y.5 <- ImputationRegressionGLM(fmla.5, X, Z.imp)
-  tab.reg.3y.5 <- fit_to_table(imp.reg.results.3y.5)
+  # tab.reg.3y.1 <- fit_to_table(imp.reg.results.3y)
+  #
+  # fmla.2 <- formula(outcome ~ ne4s_group)
+  # imp.reg.results.3y.2 <- ImputationRegressionGLM(fmla.2, X, Z.imp)
+  # tab.reg.3y.2 <- fit_to_table(imp.reg.results.3y.2)
+  #
+  # fmla.3 <- formula(outcome ~ educ_binary)
+  # imp.reg.results.3y.3 <- ImputationRegressionGLM(fmla.3, X, Z.imp)
+  # tab.reg.3y.3 <- fit_to_table(imp.reg.results.3y.3)
+  #
+  # fmla.4 <- formula(outcome ~ sex)
+  # imp.reg.results.3y.4 <- ImputationRegressionGLM(fmla.4, X, Z.imp)
+  # tab.reg.3y.4 <- fit_to_table(imp.reg.results.3y.4)
+  #
+  # fmla.5 <- formula(outcome ~ age)
+  # imp.reg.results.3y.5 <- ImputationRegressionGLM(fmla.5, X, Z.imp)
+  # tab.reg.3y.5 <- fit_to_table(imp.reg.results.3y.5)
 }
 
 
@@ -447,14 +450,14 @@ imp.reg.results.6y.nocov$`cc-p-values`
 
 
 #naive z matching
-fit.z.score <- glm(fmla.1, data = z.score.dat.6y)
-z.score.coefs <- fit.z.score$coefficients
-z.score.coefs
+fit.z.score.6y <- glm(fmla.1, data = z.score.dat.6y)
+z.score.coefs.6y <- fit.z.score.6y$coefficients
+z.score.coefs.6y
 
 #quantile matching
-fit.quantile <- glm(fmla.1, data = quantile.dat.6y)
-quantile.match.coefs <- fit.quantile$coefficients
-quantile.match.coefs
+fit.quantile.6y <- glm(fmla.1, data = quantile.dat.6y)
+quantile.match.coefs.6y <- fit.quantile.6y$coefficients
+quantile.match.coefs.6y
 
 #####
 
@@ -462,12 +465,20 @@ quantile.match.coefs
 
 
 
-boot.model.6y <-  ImputationRegressionDifferencesGLMBootstrap(fmla.1, clean.tests.lag.6y, y.ref.6y, z.ref.6y,
-                                                              n.impute, y.train, z.train,
-                                                              cond.y, cond.z, mu.y1, mu.z1,
-                                                              ref.cols, ker.set, R.bins = 1000,
-                                                              threshold = 5 * 10^(-5), max.iter = 3,
-                                                              B.boot = 200, verbose = T)
+run.boot = F
+if(run.boot){
+  boot.model.6y <-  ImputationRegressionDifferencesGLMBootstrap(fmla.1, clean.tests.lag.6y, y.ref.6y, z.ref.6y,
+                                                                n.impute, y.train, z.train,
+                                                                cond.y, cond.z, mu.y1, mu.z1,
+                                                                ref.cols, ker.set, R.bins = 1000,
+                                                                threshold = 5 * 10^(-5), max.iter = 3,
+                                                                B.boot = 200, verbose = T)
+}
+
+load.boot = T
+if(load.boot){
+  boot.model.6y <- readRDS("data/bootstrap_regression_6y.rds")
+}
 
 
 boot.model.6y$coefficients - imp.reg.results.6y$coefficients
@@ -480,16 +491,12 @@ if(save.boot){
 }
 
 
-load.boot = T
-if(load.boot){
-  boot.model.6y <- readRDS("data/bootstrap_regression_6y.rds")
-}
 
 
 
 
 
-term <- names(quantile.match.coefs)
+term <- names(quantile.match.coefs.6y)
 
 # complete case
 # m1 <- data.frame("term" = term,
@@ -520,22 +527,22 @@ m5$model = "DNOISe Bootstrap"
 
 
 m6 <- data.frame("term" = term,
-                 "estimate" = z.score.coefs,
-                 "std.error" = sqrt(diag(sandwich(fit.z.score))))
+                 "estimate" = z.score.coefs.6y,
+                 "std.error" = sqrt(diag(sandwich(fit.z.score.6y))))
 m6$model = "Z Score Matching"
 
 m7 <- data.frame("term" = term,
-                 "estimate" = quantile.match.coefs,
-                 "std.error" = sqrt(diag(sandwich(fit.quantile))))
+                 "estimate" = quantile.match.coefs.6y,
+                 "std.error" = sqrt(diag(sandwich(fit.quantile.6y))))
 m7$model = "Quantile Matching"
 
 # no complete cases exist
-model.coefs <- rbind(m5,m6,m7)
+model.coefs.6y <- rbind(m5,m6,m7)
 
 
 imp.reg.results.6y$`cc-coefficients`
 
-quantile.match.coefs
+quantile.match.coefs.6y
 
 ### dot and whisker plot
 plot.results = T
@@ -546,7 +553,7 @@ if(plot.results){
   png.height = 1000
   png.res = 200
 
-  p.6y <- dwplot(model.coefs, show_intercept = FALSE)
+  p.6y <- dwplot(model.coefs.6y, show_intercept = FALSE)
 
   png(filename = "plots/6_year_impute_e4_education_interaction.png",
       width = png.width, height = png.height, res = png.res)
@@ -559,23 +566,23 @@ if(plot.results){
 
 
 
-  tab.reg.6y.1 <- fit_to_table(imp.reg.results.6y)
-
-  fmla.2 <- formula(outcome ~ ne4s_group)
-  imp.reg.results.6y.2 <- ImputationRegressionGLM(fmla.2, X, Z.imp)
-  tab.reg.6y.2 <- fit_to_table(imp.reg.results.6y.2)
-
-  fmla.3 <- formula(outcome ~ educ_binary)
-  imp.reg.results.6y.3 <- ImputationRegressionGLM(fmla.3, X, Z.imp)
-  tab.reg.6y.3 <- fit_to_table(imp.reg.results.6y.3)
-
-  fmla.4 <- formula(outcome ~ sex)
-  imp.reg.results.6y.4 <- ImputationRegressionGLM(fmla.4, X, Z.imp)
-  tab.reg.6y.4 <- fit_to_table(imp.reg.results.6y.4)
-
-  fmla.5 <- formula(outcome ~ age)
-  imp.reg.results.6y.5 <- ImputationRegressionGLM(fmla.5, X, Z.imp)
-  tab.reg.6y.5 <- fit_to_table(imp.reg.results.6y.5)
+  # tab.reg.6y.1 <- fit_to_table(imp.reg.results.6y)
+  #
+  # fmla.2 <- formula(outcome ~ ne4s_group)
+  # imp.reg.results.6y.2 <- ImputationRegressionGLM(fmla.2, X, Z.imp)
+  # tab.reg.6y.2 <- fit_to_table(imp.reg.results.6y.2)
+  #
+  # fmla.3 <- formula(outcome ~ educ_binary)
+  # imp.reg.results.6y.3 <- ImputationRegressionGLM(fmla.3, X, Z.imp)
+  # tab.reg.6y.3 <- fit_to_table(imp.reg.results.6y.3)
+  #
+  # fmla.4 <- formula(outcome ~ sex)
+  # imp.reg.results.6y.4 <- ImputationRegressionGLM(fmla.4, X, Z.imp)
+  # tab.reg.6y.4 <- fit_to_table(imp.reg.results.6y.4)
+  #
+  # fmla.5 <- formula(outcome ~ age)
+  # imp.reg.results.6y.5 <- ImputationRegressionGLM(fmla.5, X, Z.imp)
+  # tab.reg.6y.5 <- fit_to_table(imp.reg.results.6y.5)
 }
 
 
@@ -613,7 +620,7 @@ table(clean.tests.lag.8y$ne4s_group)/nrow(clean.tests.lag.8y)
 
 
 
-colMeans(as.data.frame(clean.tests.lag.8y))
+#colMeans(as.data.frame(clean.tests.lag.8y))
 
 
 y.ref.8y <- clean.tests.lag.8y$y
@@ -698,28 +705,33 @@ imp.reg.results.8y.nocov$`cc-p-values`
 
 
 #naive z matching
-fit.z.score <- glm(fmla.1, data = z.score.dat.8y)
-z.score.coefs <- fit.z.score$coefficients
-z.score.coefs
+fit.z.score.8y <- glm(fmla.1, data = z.score.dat.8y)
+z.score.coefs.8y <- fit.z.score.8y$coefficients
+z.score.coefs.8y
 
 #quantile matching
-fit.quantile <- glm(fmla.1, data = quantile.dat.8y)
-quantile.match.coefs <- fit.quantile$coefficients
-quantile.match.coefs
+fit.quantile.8y <- glm(fmla.1, data = quantile.dat.8y)
+quantile.match.coefs.8y <- fit.quantile.8y$coefficients
+quantile.match.coefs.8y
 
 #####
 
 
 
 
-
-boot.model.8y <-  ImputationRegressionDifferencesGLMBootstrap(fmla.1, clean.tests.lag.8y, y.ref.8y, z.ref.8y,
-                                                              n.impute, y.train, z.train,
-                                                              cond.y, cond.z, mu.y1, mu.z1,
-                                                              ref.cols, ker.set, R.bins = 1000,
-                                                              threshold = 5 * 10^(-5), max.iter = 3,
-                                                              B.boot = 200, verbose = T)
-
+run.boot = F
+if(run.boot){
+  boot.model.8y <-  ImputationRegressionDifferencesGLMBootstrap(fmla.1, clean.tests.lag.8y, y.ref.8y, z.ref.8y,
+                                                                n.impute, y.train, z.train,
+                                                                cond.y, cond.z, mu.y1, mu.z1,
+                                                                ref.cols, ker.set, R.bins = 1000,
+                                                                threshold = 5 * 10^(-5), max.iter = 3,
+                                                                B.boot = 200, verbose = T)
+}
+load.boot = T
+if(load.boot){
+  boot.model.8y <- readRDS("data/bootstrap_regression_8y.rds")
+}
 
 boot.model.8y$coefficients - imp.reg.results.8y$coefficients
 boot.model.8y$coefficients - imp.reg.results.8y.nocov$coefficients
@@ -730,10 +742,6 @@ if(save.boot){
   saveRDS(boot.model.8y, "data/bootstrap_regression_8y.rds")
 }
 
-load.boot = T
-if(load.boot){
-  boot.model.8y <- readRDS("data/bootstrap_regression_8y.rds")
-}
 
 
 
@@ -741,7 +749,7 @@ if(load.boot){
 
 
 
-term <- names(quantile.match.coefs)
+term <- names(quantile.match.coefs.8y)
 
 # complete case
 # m1 <- data.frame("term" = term,
@@ -772,22 +780,23 @@ m5$model = "DNOISe Bootstrap"
 
 
 m6 <- data.frame("term" = term,
-                 "estimate" = z.score.coefs,
-                 "std.error" = sqrt(diag(sandwich(fit.z.score))))
+                 "estimate" = z.score.coefs.8y,
+                 "std.error" = sqrt(diag(sandwich(fit.z.score.8y))))
 m6$model = "Z Score Matching"
 
 m7 <- data.frame("term" = term,
-                 "estimate" = quantile.match.coefs,
-                 "std.error" = sqrt(diag(sandwich(fit.quantile))))
+                 "estimate" = quantile.match.coefs.8y,
+                 "std.error" = sqrt(diag(sandwich(fit.quantile.8y))))
 m7$model = "Quantile Matching"
 
+
 # no complete cases exist
-model.coefs <- rbind(m5,m6,m7)
+model.coefs.8y <- rbind(m5,m6,m7)
 
 
 imp.reg.results.8y$`cc-coefficients`
 
-quantile.match.coefs
+quantile.match.coefs.8y
 
 ### dot and whisker plot
 plot.results = T
@@ -798,7 +807,7 @@ if(plot.results){
   png.height = 1000
   png.res = 200
 
-  p.8y <- dwplot(model.coefs, show_intercept = FALSE)
+  p.8y <- dwplot(model.coefs.8y, show_intercept = FALSE)
 
   png(filename = "plots/8_year_impute_e4_education_interaction.png",
       width = png.width, height = png.height, res = png.res)
@@ -809,26 +818,95 @@ if(plot.results){
   dev.off()
 
 
-
-
-  tab.reg.8y.1 <- fit_to_table(imp.reg.results.8y)
-
-  fmla.2 <- formula(outcome ~ ne4s_group)
-  imp.reg.results.8y.2 <- ImputationRegressionGLM(fmla.2, X, Z.imp)
-  tab.reg.8y.2 <- fit_to_table(imp.reg.results.8y.2)
-
-  fmla.3 <- formula(outcome ~ educ_binary)
-  imp.reg.results.8y.3 <- ImputationRegressionGLM(fmla.3, X, Z.imp)
-  tab.reg.8y.3 <- fit_to_table(imp.reg.results.8y.3)
-
-  fmla.4 <- formula(outcome ~ sex)
-  imp.reg.results.8y.4 <- ImputationRegressionGLM(fmla.4, X, Z.imp)
-  tab.reg.8y.4 <- fit_to_table(imp.reg.results.8y.4)
-
-  fmla.5 <- formula(outcome ~ age)
-  imp.reg.results.8y.5 <- ImputationRegressionGLM(fmla.5, X, Z.imp)
-  tab.reg.8y.5 <- fit_to_table(imp.reg.results.8y.5)
+  # tab.reg.8y.1 <- fit_to_table(imp.reg.results.8y)
+  #
+  # fmla.2 <- formula(outcome ~ ne4s_group)
+  # imp.reg.results.8y.2 <- ImputationRegressionGLM(fmla.2, X, Z.imp)
+  # tab.reg.8y.2 <- fit_to_table(imp.reg.results.8y.2)
+  #
+  # fmla.3 <- formula(outcome ~ educ_binary)
+  # imp.reg.results.8y.3 <- ImputationRegressionGLM(fmla.3, X, Z.imp)
+  # tab.reg.8y.3 <- fit_to_table(imp.reg.results.8y.3)
+  #
+  # fmla.4 <- formula(outcome ~ sex)
+  # imp.reg.results.8y.4 <- ImputationRegressionGLM(fmla.4, X, Z.imp)
+  # tab.reg.8y.4 <- fit_to_table(imp.reg.results.8y.4)
+  #
+  # fmla.5 <- formula(outcome ~ age)
+  # imp.reg.results.8y.5 <- ImputationRegressionGLM(fmla.5, X, Z.imp)
+  # tab.reg.8y.5 <- fit_to_table(imp.reg.results.8y.5)
 }
+
+
+
+
+
+plot.results = T
+if(plot.results){
+  library(dotwhisker)
+  library(ggpubr)
+  png.width = 1200
+  png.height = 1000
+  png.res = 200
+
+
+  coef.vec <- c(imp.reg.results.3y$`cc-coefficients`,
+                boot.model.3y$coefficients,
+                z.score.coefs.3y,
+                quantile.match.coefs.3y,
+                boot.model.8y$coefficients,
+                z.score.coefs.8y,
+                quantile.match.coefs.8y)
+  sd.vec <- c(sqrt(diag(imp.reg.results.3y$`cc-variance`)),
+              sqrt(diag(boot.model.3y$variance)),
+              sqrt(diag(sandwich(fit.z.score.3y))),
+              sqrt(diag(sandwich(fit.quantile.3y))),
+              sqrt(diag(boot.model.8y$variance)),
+              sqrt(diag(sandwich(fit.z.score.8y))),
+              sqrt(diag(sandwich(fit.quantile.8y))))
+  term <- names(quantile.match.coefs.3y)
+
+  coef.names <- rep(term, times = 7)
+
+  n.coef <- length(term)
+  coef.x <- rep(seq(1,n.coef), times = 7)
+  coef.x <- coef.x + rep(seq(-3,3)/(25), each = n.coef)
+  method.names <- c(rep(c("Only MOCA","DNOISe Bootstrap","Z Score Matching","Quantile Matching"), each = n.coef),
+                   rep(c("DNOISe Bootstrap","Z Score Matching","Quantile Matching"), each = n.coef))
+
+  dataset <- c(rep("3-4 year", 4*n.coef),
+               rep("8-10 year", 3*n.coef))
+
+  plot.data <- data.frame("Coefficients" = coef.vec,
+                          "Xcoef" = coef.x,
+                          "sd" = sd.vec,
+                          "Parameters" = coef.names,
+                          "Method" = method.names,
+                          "Dataset" = dataset
+  )
+  title = "Cognitive Reserve Regression Coefficients"
+
+  plt <- ggplot(plot.data,aes(x = Xcoef, y = Coefficients, group = interaction(Dataset, Method),
+                color = Method, linetype = Dataset)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = Coefficients - 2*sd, ymax = Coefficients + 2*sd)) +
+  ggtitle(title) +
+  xlab("Parameter") +
+  scale_x_discrete(breaks=seq(1,n.coef),
+                   labels=term)
+  plt
+  # add levels to coef.names
+  png(filename = paste0("plots/impute_e4_education_interaction.png"),
+      width = png.width, height = png.height, res = png.res)
+
+  plt
+  # Close the pdf file
+  dev.off()
+
+
+
+}
+
 
 
 

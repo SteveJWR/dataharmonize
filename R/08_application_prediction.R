@@ -195,8 +195,8 @@ cw.data <- read.csv("data/NACCMMSE_to_MOCATOTS_test.csv")
 
 
 grid.size = 50
-mu1.set = seq(0,2, length.out = grid.size)
-mu2.set = seq(0,5, length.out = grid.size)
+mu1.set = seq(0,1, length.out = grid.size)
+mu2.set = seq(0,1, length.out = grid.size)
 
 mu.grid = expand.grid(mu1.set, mu2.set)
 J = nrow(mu.grid)
