@@ -95,7 +95,6 @@ clean.tests <- clean.tests[!missing.both,]
 clean.tests <- clean.tests[clean.tests$educ < 50,] # error variable here, make sure this does not include the 99 error code
 clean.tests <- categorize(clean.tests)
 
-mean(clean.tests$sex == 0 & clean.tests$educ <= 16)
 
 
 table(clean.tests$group)
@@ -121,6 +120,23 @@ clean.tests <- clean.tests[!no.tests,]
 time.lag.3y <- as.Date("2003/01/01") - as.Date("2000/01/01")
 
 clean.tests.lag.3y <- lag_pair_visit_label(clean.tests, time.lag.3y)
+
+summary(clean.tests.lag.3y)
+
+mean(clean.tests.lag.3y$age)
+sd(clean.tests.lag.3y$age)
+
+mean(clean.tests.lag.3y$sex == 2)
+sd(clean.tests.lag.3y$sex == 2)
+
+
+mean(clean.tests.lag.3y$educ_binary)
+sd(clean.tests.lag.3y$educ_binary)
+
+table(clean.tests.lag.3y$cdr_group)/nrow(clean.tests.lag.3y)
+
+table(clean.tests.lag.3y$ne4s_group)/nrow(clean.tests.lag.3y)
+
 
 summary(clean.tests.lag.3y)
 
@@ -584,14 +600,15 @@ summary(clean.tests.lag.8y)
 mean(clean.tests.lag.8y$age)
 sd(clean.tests.lag.8y$age)
 
-mean(clean.tests.lag.8y$sex)
-sd(clean.tests.lag.8y$sex)
+mean(clean.tests.lag.8y$sex == 2)
+sd(clean.tests.lag.8y$sex == 2)
 
 
 mean(clean.tests.lag.8y$educ_binary)
 sd(clean.tests.lag.8y$educ_binary)
 
 table(clean.tests.lag.8y$cdr_group)/nrow(clean.tests.lag.8y)
+
 table(clean.tests.lag.8y$ne4s_group)/nrow(clean.tests.lag.8y)
 
 

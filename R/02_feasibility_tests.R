@@ -121,7 +121,7 @@ if(make.plots){
   H = 35
   h.set <- exp(seq(log(0.8), log(20), length.out = H))
 
-  kernel <- "Gaussian" #"Exponential" #"Gaussian"
+  kernel <- "Exponential" #"Exponential" #"Gaussian"
   # update this section to concatenate the results
   res1 <- readRDS(paste0("data/feasibility_test_order_1_results_",kernel,1, ".rds"))
   res2 <- readRDS(paste0("data/feasibility_test_order_2_results_",kernel,1, ".rds"))

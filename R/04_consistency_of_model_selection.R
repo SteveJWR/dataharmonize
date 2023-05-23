@@ -98,7 +98,7 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  kernel = "Gaussian" #"Exponential", "Gaussian"
+  kernel = "Exponential" #"Exponential", "Gaussian"
   # grid.parameters
   n.seq = c(100,500,1000,5000,10000)
   J = length(n.seq)
