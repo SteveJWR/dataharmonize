@@ -799,7 +799,7 @@ imp.reg.results.8y$`cc-coefficients`
 quantile.match.coefs.8y
 
 ### dot and whisker plot
-plot.results = T
+plot.results = F
 if(plot.results){
   library(dotwhisker)
   library(ggpubr)
@@ -841,7 +841,7 @@ if(plot.results){
 
 
 
-plot.results = T
+plot.results = F
 if(plot.results){
   library(dotwhisker)
   library(ggpubr)
@@ -870,7 +870,7 @@ if(plot.results){
 
   n.coef <- length(term)
   coef.x <- rep(seq(1,n.coef), times = 7)
-  coef.x <- coef.x + rep(seq(-3,3)/(25), each = n.coef)
+  coef.x <- coef.x + rep(seq(-3,3)/(21), each = n.coef)
   method.names <- c(rep(c("Only MOCA","DNOISe Bootstrap","Z Score Matching","Quantile Matching"), each = n.coef),
                    rep(c("DNOISe Bootstrap","Z Score Matching","Quantile Matching"), each = n.coef))
 
@@ -884,20 +884,22 @@ if(plot.results){
                           "Method" = method.names,
                           "Dataset" = dataset
   )
+  plot.data$Method <- factor(plot.data$Method, levels = c("Only MOCA","DNOISe Bootstrap","Z Score Matching","Quantile Matching"))
   title = "Cognitive Reserve Regression Coefficients"
 
   plt <- ggplot(plot.data,aes(x = Xcoef, y = Coefficients, group = interaction(Dataset, Method),
                 color = Method, linetype = Dataset)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = Coefficients - 2*sd, ymax = Coefficients + 2*sd)) +
-  ggtitle(title) +
-  xlab("Parameter") +
-  scale_x_discrete(breaks=seq(1,n.coef),
-                   labels=term)
-  plt
+      geom_point(aes(shape=Dataset)) +
+      geom_errorbar(aes(ymin = Coefficients - 2*sd, ymax = Coefficients + 2*sd), width = 0.2) +
+      ggtitle(title) +
+      xlab("Parameter") +
+      scale_linetype_manual(values=c("twodash", "solid")) +
+      scale_x_continuous(labels=term, breaks=seq(1,n.coef))+
+      theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
   # add levels to coef.names
   png(filename = paste0("plots/impute_e4_education_interaction.png"),
-      width = png.width, height = png.height, res = png.res)
+      width = (1.8)*png.width, height = png.height, res = png.res)
 
   plt
   # Close the pdf file

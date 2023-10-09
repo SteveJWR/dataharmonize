@@ -6,7 +6,7 @@ library(dnoiseR)
 slurm_arrayid <- Sys.getenv('SLURM_ARRAY_TASK_ID')
 print(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 if(slurm_arrayid == ""){
-  id = 2
+  id = 1
 } else {
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
@@ -63,7 +63,6 @@ uniform.latent <- rep(1/R.bins,R.bins)
 # TODO: Also do this as a function of h
 for(j in seq(J)){
   N = N.set[j]
-
   for(h in seq(length(h.set))){
     h.bandwidth = h.set[h]
     cond <- conditional_mkm(N,ker, h.bandwidth)
@@ -116,7 +115,7 @@ saveRDS(like.cvxr, paste0("data/fitting_likelihood_cvxr_results_",kernel,ceiling
 
 
 
-make.plots = F
+make.plots = T
 
 if(make.plots){
   library(ggpubr)
@@ -127,7 +126,7 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  kernel = "Gaussian" # "Gaussian" # "Exponential"
+  kernel = "Exponential" # "Gaussian" # "Exponential"
 
   # grid.parameters
   # Conditional Models
@@ -196,12 +195,13 @@ if(make.plots){
         plot.data.tmp <- plot.data %>% filter(mu == mu.tmp, Dist == cond.idx)
 
         title <- paste0("Time Comparison ", kernel, " Kernel : \u03bc = ", mu.tmp," --- Conditional: ",cond.idx )
-        plot.time <-  ggplot(plot.data.tmp, aes(log(Bandwidth), log(Time), group = interaction(N, Method),
+        plot.time <-  ggplot(plot.data.tmp, aes(log(Bandwidth), Time, group = interaction(N, Method),
                        color = N, linetype = Method)) +
           geom_line() + geom_point() +
           ggtitle(title) +
           xlab("log-Bandwidth (h)") +
-          ylab("log-Time (s)")
+          scale_y_continuous(trans='log10') +
+          ylab("Time (s)")
 
         # png(filename = paste0("plots/time_comparison_mu_",mu.tmp,"_marg_",k,kernel,".png"),
         #     width = png.width, height = png.height, res = png.res)

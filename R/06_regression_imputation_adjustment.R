@@ -568,9 +568,14 @@ if(make.plots){
                                        z.score.rmse.sd,quantile.rmse.sd))
 
 
+  accepted.methods = c("Complete Case", "DNOISE (Oracle)", "DNOISE (Bootstrap)", "Z Score", "Quantile")
+
+
+  res.data <- res.data %>%filter(method %in% accepted.methods)
   plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
     geom_line() +
-    ggtitle("Bias of Regression Estimate") #+
+    ggtitle("Bias of Regression Estimate") +
+    ylim(-0.25,0.25)#+
   #geom_line(aes(x = n, y = rmse, color = method)) #+
   #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))
 
@@ -622,7 +627,7 @@ if(make.plots){
                          "error" = cov.error)
 
 
-  #cov.data <- cov.data %>% filter(n != 500)
+  cov.data <- cov.data %>% filter(method %in% accepted.methods)
   plt.coverage <- ggplot(cov.data, aes(x = log(n), y = coverage, color = method)) +
     geom_line(position=position_dodge(width=0.2)) +
     geom_errorbar(aes(ymin = coverage - 2*error, ymax = coverage + 2*error), width=0.5,
