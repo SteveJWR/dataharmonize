@@ -11,4 +11,4 @@
 #SBATCH --mail-user=stevewr@uw.edu # Email to which notifications will be sent
 source /etc/profile.d/z00_lmod.sh
 module load R/4.0.0-foss-2020a
-Rscript R/06c_regression_imputation_adjustment.R 
+Rscript R/06_regression_imputation_adjustment.R 

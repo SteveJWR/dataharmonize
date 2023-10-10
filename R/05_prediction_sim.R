@@ -23,6 +23,8 @@ if(slurm_arrayid == ""){
 }
 
 
+# Latent piece wise Linear
+latent.pwl = T
 
 n.sims = 5 # TODO: Change this to 500
 
@@ -198,7 +200,10 @@ for(sim in sim.start:n.sims){
     #X <- rep(c(55,80), n/2)
 
     lat.mu2 <- -(1/10*(X - 67.5))^2 +  0.5
-    #lat.mu2 <- (-1/5*(X - 67.5) +  2.5)*sin(X)
+    if(latent.pwl){
+      lat.mu2 <- 0.5 + pmin( -(1/100*(X - 71)),  -(1/5*(X - 71)))
+    }
+    # lat.mu2 <- (-1/5*(X - 67.5) +  2.5)*sin(X)
 
     # missingness pattern
     idx1 <- c()
@@ -215,25 +220,9 @@ for(sim in sim.start:n.sims){
     #
     U <- runif(n)
     gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-    #gamma.true.seq <- logistic(lat.mu +rnorm(length(X),sd = 1))#gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-    # one to one mapping of latent traits
-    gamma1 <- sqrt(gamma2)
-    #gamma1 <- gamma2*(1/5) + 4/5
-    # true.mix.y <- hist(gamma1, breaks = seq(0,1,length.out = 1001))$density
-    # true.mix.z <- hist(gamma2, breaks = seq(0,1,length.out = 1001))$density
-    # true.mix.y <- true.mix.y/sum(true.mix.y)
-    # true.mix.z <- true.mix.z/sum(true.mix.z)
-    # plot(hist(gamma1, breaks = 50))
-    # plot(hist(gamma2, breaks = 50))
-    # y1 <- rbinom(length(gamma1),Ny, gamma1)
-    # y2 <- rbinom(length(gamma1),Ny, gamma1)
-    # z1 <- rbinom(length(gamma2),Nz, gamma2)
-    # z2 <- rbinom(length(gamma2),Nz, gamma2)
 
-    # Y <- matrix(c(y1,y2), ncol= 2)
-    # Z <- matrix(c(z1,z2), ncol= 2)
-    # Y <- simulate_test_cond(obs.set = rep(2,length(gamma1)),cond.y ,gamma1)
-    # Z <- simulate_test_cond(obs.set = rep(2,length(gamma2)),cond.z ,gamma2)
+    gamma1 <- sqrt(gamma2)
+
     Y <- simulate_test_cond(obs.set = rep(1,length(gamma1)),cond.y ,gamma1)
     Z <- simulate_test_cond(obs.set = rep(1,length(gamma2)),cond.z ,gamma2)
     y1 <- Y[,1]
@@ -250,12 +239,11 @@ for(sim in sim.start:n.sims){
     Y.train <- cbind(Y, X.y)
     Z.train <- cbind(Z, X.z)
 
-    # colnames(Y.train) = c("y1", "y2","age") # do we need any of these?
-    # colnames(Z.train) = c("z1", "z2","age")
-    colnames(Y.train) = c("y", "age") # do we need any of these?
+
+    colnames(Y.train) = c("y", "age")
     colnames(Z.train) = c("z", "age")
 
-    #TODO: add all the other kernel and regularized versions
+
 
     mean.y <- mean(Y.train[,1])
     mean.z <- mean(Z.train[,1])
@@ -277,7 +265,6 @@ for(sim in sim.start:n.sims){
 
 
 
-    #TODO: In theory we could have a different kernel function to smooth over for each scale
     cond.pred.cov.adj <- predictedDistributions(sim.data[idx1,],sim.data$Y[idx1],
                                                 Y.train,Z.train,cond.y,cond.z,
                                                 mu.y/n,mu.z/n,ref.cols, ker.set, R.bins = 1000)
@@ -349,21 +336,41 @@ for(sim in sim.start:n.sims){
 
 ########
 
-saveRDS(res, paste0("data/05_pred",id, ".rds"))
-saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
 
-saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
-saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
-saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
-saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
 
-saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
-saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
-saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
-saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
 
-saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
+if(latent.pwl){
+  saveRDS(res, paste0("data/05_pwl_pred",id, ".rds"))
+  saveRDS(res.no.reg, paste0("data/05_pwl_pred_no_reg",id, ".rds"))
 
+  saveRDS(res.cov.adj, paste0("data/05_pwl_pred_cov_adj",id, ".rds"))
+  saveRDS(res.cov.adj.small.h, paste0("data/05_pwl_pred_cov_adj_small_h",id, ".rds"))
+  saveRDS(res.cov.adj.med.h, paste0("data/05_pwl_pred_cov_adj_med_h",id, ".rds"))
+  saveRDS(res.cov.adj.large.h, paste0("data/05_pwl_pred_cov_adj_large_h",id, ".rds"))
+
+  saveRDS(res.cov.adj.no.reg, paste0("data/05_pwl_pred_cov_adj_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pwl_pred_cov_adj_small_h_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pwl_pred_cov_adj_med_h_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pwl_pred_cov_adj_large_h_no_reg",id, ".rds"))
+
+  saveRDS(res.z.score, paste0("data/05_pwl_pred_zscore",id, ".rds"))
+
+} else {
+  saveRDS(res, paste0("data/05_pred",id, ".rds"))
+  saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
+
+  saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
+  saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
+  saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
+  saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
+
+  saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
+  saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
+
+  saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
+}
 
 
 make.plots = F
@@ -377,38 +384,74 @@ if(make.plots){
 
 
   #TODO: Finish the set of plots
-  res <- readRDS(paste0("data/05_pred",1, ".rds"))
-  res.no.reg <- readRDS(paste0("data/05_pred_no_reg",1, ".rds"))
+  if(latent.pwl){
+    res <- readRDS(paste0("data/05_pwl_pred",1, ".rds"))
+    res.no.reg <- readRDS(paste0("data/05_pwl_pred_no_reg",1, ".rds"))
 
-  res.cov.adj <- readRDS(paste0("data/05_pred_cov_adj",1, ".rds"))
-  res.cov.adj.small.h <- readRDS(paste0("data/05_pred_cov_adj_small_h",1, ".rds"))
-  res.cov.adj.med.h <- readRDS(paste0("data/05_pred_cov_adj_med_h",1, ".rds"))
-  res.cov.adj.large.h <- readRDS(paste0("data/05_pred_cov_adj_large_h",1, ".rds"))
+    res.cov.adj <- readRDS(paste0("data/05_pwl_pred_cov_adj",1, ".rds"))
+    res.cov.adj.small.h <- readRDS(paste0("data/05_pwl_pred_cov_adj_small_h",1, ".rds"))
+    res.cov.adj.med.h <- readRDS(paste0("data/05_pwl_pred_cov_adj_med_h",1, ".rds"))
+    res.cov.adj.large.h <- readRDS(paste0("data/05_pwl_pred_cov_adj_large_h",1, ".rds"))
 
-  res.cov.adj.no.reg <- readRDS(paste0("data/05_pred_cov_adj_no_reg",1, ".rds"))
-  res.cov.adj.small.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_small_h_no_reg",1, ".rds"))
-  res.cov.adj.med.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_med_h_no_reg",1, ".rds"))
-  res.cov.adj.large.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_large_h_no_reg",1, ".rds"))
+    res.cov.adj.no.reg <- readRDS(paste0("data/05_pwl_pred_cov_adj_no_reg",1, ".rds"))
+    res.cov.adj.small.h.no.reg <- readRDS(paste0("data/05_pwl_pred_cov_adj_small_h_no_reg",1, ".rds"))
+    res.cov.adj.med.h.no.reg <- readRDS(paste0("data/05_pwl_pred_cov_adj_med_h_no_reg",1, ".rds"))
+    res.cov.adj.large.h.no.reg <- readRDS(paste0("data/05_pwl_pred_cov_adj_large_h_no_reg",1, ".rds"))
 
-  res.z.score <- readRDS(paste0("data/05_pred_zscore",1, ".rds"))
+    res.z.score <- readRDS(paste0("data/05_pwl_pred_zscore",1, ".rds"))
+  } else {
+    res <- readRDS(paste0("data/05_pred",1, ".rds"))
+    res.no.reg <- readRDS(paste0("data/05_pred_no_reg",1, ".rds"))
+
+    res.cov.adj <- readRDS(paste0("data/05_pred_cov_adj",1, ".rds"))
+    res.cov.adj.small.h <- readRDS(paste0("data/05_pred_cov_adj_small_h",1, ".rds"))
+    res.cov.adj.med.h <- readRDS(paste0("data/05_pred_cov_adj_med_h",1, ".rds"))
+    res.cov.adj.large.h <- readRDS(paste0("data/05_pred_cov_adj_large_h",1, ".rds"))
+
+    res.cov.adj.no.reg <- readRDS(paste0("data/05_pred_cov_adj_no_reg",1, ".rds"))
+    res.cov.adj.small.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_small_h_no_reg",1, ".rds"))
+    res.cov.adj.med.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_med_h_no_reg",1, ".rds"))
+    res.cov.adj.large.h.no.reg <- readRDS(paste0("data/05_pred_cov_adj_large_h_no_reg",1, ".rds"))
+
+    res.z.score <- readRDS(paste0("data/05_pred_zscore",1, ".rds"))
+  }
+
 
 
   for(j in seq(2,200)){
 
-    res.tmp <- readRDS(paste0("data/05_pred",j, ".rds"))
-    res.no.reg.tmp <- readRDS(paste0("data/05_pred_no_reg",j, ".rds"))
+    if(latent.pwl){
+      res.tmp <- readRDS(paste0("data/05_pwl_pred",j, ".rds"))
+      res.no.reg.tmp <- readRDS(paste0("data/05_pwl_pred_no_reg",j, ".rds"))
 
-    res.cov.adj.tmp <- readRDS(paste0("data/05_pred_cov_adj",j, ".rds"))
-    res.cov.adj.small.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_small_h",j, ".rds"))
-    res.cov.adj.med.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_med_h",j, ".rds"))
-    res.cov.adj.large.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_large_h",j, ".rds"))
+      res.cov.adj.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj",j, ".rds"))
+      res.cov.adj.small.h.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj_small_h",j, ".rds"))
+      res.cov.adj.med.h.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj_med_h",j, ".rds"))
+      res.cov.adj.large.h.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj_large_h",j, ".rds"))
 
-    res.cov.adj.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_no_reg",j, ".rds"))
-    res.cov.adj.small.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_small_h_no_reg",j, ".rds"))
-    res.cov.adj.med.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_med_h_no_reg",j, ".rds"))
-    res.cov.adj.large.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_large_h_no_reg",j, ".rds"))
+      res.cov.adj.no.reg.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj_no_reg",j, ".rds"))
+      res.cov.adj.small.h.no.reg.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj_small_h_no_reg",j, ".rds"))
+      res.cov.adj.med.h.no.reg.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj_med_h_no_reg",j, ".rds"))
+      res.cov.adj.large.h.no.reg.tmp <- readRDS(paste0("data/05_pwl_pred_cov_adj_large_h_no_reg",j, ".rds"))
 
-    res.z.score.tmp <- readRDS(paste0("data/05_pred_zscore",j, ".rds"))
+      res.z.score.tmp <- readRDS(paste0("data/05_pwl_pred_zscore",j, ".rds"))
+    } else {
+      res.tmp <- readRDS(paste0("data/05_pred",j, ".rds"))
+      res.no.reg.tmp <- readRDS(paste0("data/05_pred_no_reg",j, ".rds"))
+
+      res.cov.adj.tmp <- readRDS(paste0("data/05_pred_cov_adj",j, ".rds"))
+      res.cov.adj.small.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_small_h",j, ".rds"))
+      res.cov.adj.med.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_med_h",j, ".rds"))
+      res.cov.adj.large.h.tmp <- readRDS(paste0("data/05_pred_cov_adj_large_h",j, ".rds"))
+
+      res.cov.adj.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_no_reg",j, ".rds"))
+      res.cov.adj.small.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_small_h_no_reg",j, ".rds"))
+      res.cov.adj.med.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_med_h_no_reg",j, ".rds"))
+      res.cov.adj.large.h.no.reg.tmp <- readRDS(paste0("data/05_pred_cov_adj_large_h_no_reg",j, ".rds"))
+
+      res.z.score.tmp <- readRDS(paste0("data/05_pred_zscore",j, ".rds"))
+    }
+
 
     res <- rbind(res, res.tmp)
     res.no.reg <- rbind(res.no.reg, res.no.reg.tmp)
@@ -527,12 +570,22 @@ if(make.plots){
 
   plt.predictions
 
-  png(filename = "plots/prediction_sim_cross_entropy_full.png",
-      width = png.width, height = png.height, res = png.res)
+  if(latent.pwl){
+    png(filename = "plots/prediction_pwl_sim_cross_entropy_full.png",
+        width = png.width, height = png.height, res = png.res)
 
-  plt.predictions
-  # Close the pdf file
-  dev.off()
+    plt.predictions
+    # Close the pdf file
+    dev.off()
+  } else {
+    png(filename = "plots/prediction_sim_cross_entropy_full.png",
+        width = png.width, height = png.height, res = png.res)
+
+    plt.predictions
+    # Close the pdf file
+    dev.off()
+  }
+
 
 
 
@@ -566,12 +619,22 @@ if(make.plots){
 
   plt.predictions
 
-  png(filename = "plots/prediction_sim_cross_entropy_zoom.png",
-      width = png.width, height = png.height, res = png.res)
+  if(latent.pwl){
+    png(filename = "plots/prediction_pwl_sim_cross_entropy_zoom.png",
+        width = png.width, height = png.height, res = png.res)
 
-  plt.predictions
-  # Close the pdf file
-  dev.off()
+    plt.predictions
+    # Close the pdf file
+    dev.off()
+  } else {
+    png(filename = "plots/prediction_sim_cross_entropy_zoom.png",
+        width = png.width, height = png.height, res = png.res)
+
+    plt.predictions
+    # Close the pdf file
+    dev.off()
+  }
+
 
 
 }
@@ -579,167 +642,6 @@ if(make.plots){
 
 
 
-
-
-
-
-
-#### AFTER HERE, REMOVE
-
-
-
-#
-#
-#
-#
-#
-#
-#
-# ### Current setup is pretty good,
-# #TODO: Add this idea of using quantile matching
-# # or a generalized optimal transport method.
-#
-# # colSDs <- function(X, ...){
-# #   X.means <- colMeans(X, ...)
-# #   v.out <- sqrt(colMeans((X.means - X)^2, ...))
-# #   return(v.out)
-# # }
-#
-#
-#
-#
-#
-# # expectile curve,
-#
-#
-#
-#
-# Ny = 200
-# Nz = 200
-# n = 500000
-# X <- round(runif(n, min = 54.5, max = 80.5))
-#
-# lat.mu2 <- -1/20*(X - 67.5) +  2.5
-# #lat.mu2 <- (-1/5*(X - 67.5) +  2.5)*sin(X)
-#
-#
-#
-# U <- runif(n)
-# gamma2 <- logistic(lat.mu2 +  (U <= 1/2)*(2 + rnorm(length(X),sd = 1)) -(U > 1/2)*(2 + rnorm(length(X),sd = 1)))
-# gamma2 <- logistic(lat.mu2 +  (U <= 1/2)*( rnorm(length(X),sd = 1)) -(U > 1/2)*( rnorm(length(X),sd = 1)))
-# #gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-# # one to one mapping of latent traits
-# gamma1 <- sqrt(gamma2)
-# #gamma1 <- gamma2*(1/5) + 4/5
-# # true.mix.y <- hist(gamma1, breaks = seq(0,1,length.out = 1001))$density
-# # true.mix.z <- hist(gamma2, breaks = seq(0,1,length.out = 1001))$density
-# # true.mix.y <- true.mix.y/sum(true.mix.y)
-# # true.mix.z <- true.mix.z/sum(true.mix.z)
-# # plot(hist(gamma1, breaks = 50))
-# # plot(hist(gamma2, breaks = 50))
-# y1 <- rbinom(length(gamma1),Ny, gamma1)
-# z1 <- rbinom(length(gamma2),Nz, gamma2)
-#
-#
-#
-#
-# quantile.vec <- rep(NA,Ny + 1)
-# expectile.vec <- rep(NA,Ny + 1)
-#
-#
-#
-#
-# for(y.idx in seq(0,Ny)){
-#   print(y.idx)
-#   which.idx <- which(y1 == y.idx)
-#
-#   cond.mean <- mean(z1[which.idx], na.rm = T)
-#   expectile.vec[y.idx + 1] = cond.mean
-#
-#   p <- mean(y1 <= y.idx)
-#   #q <- ceiling(quantile(z1, p, type = 3))
-#   q <- quantile(z1, p, na.rm = T)
-#
-#   quantile.vec[y.idx + 1] = q
-# }
-#
-#
-# plot(seq(0,Ny), quantile.vec, type = "l", col = "blue")
-# lines(seq(0,Ny), expectile.vec, type = "l", col = "green")
-# legend(60, 60, legend=c("Quantile (OT)", "Conditional Expectation"),
-#        col=c("blue", "green"), lty=c(1,1), cex=0.8)
-#
-#
-#
-#
-#
-#
-#
-# library(mvtnorm)
-# theta.seq <- c(-1,-0.5,0,.3,.5,.8,.9,1)
-#
-#
-# n = 1000000
-# Ny = 60
-# Nz = 60
-# conditional.expect <- matrix(NA, nrow = length(theta.seq), ncol = Ny + 1)
-#
-# for(i in seq(length(theta.seq))){
-#   theta = theta.seq[i]
-#   sigma <- matrix(c(1,theta,theta,1), 2,2)
-#   X <- rmvnorm(n, sigma = sigma)
-#   p1 <- pnorm(X[,1])
-#   p2 <- pnorm(X[,2])
-#   y <- qbinom(p1,Ny, .5)
-#   z <- qbinom(p2,Nz, .8)
-#   expectile.vec <- rep(NA,Ny + 1)
-#   for(y.idx in seq(0,Ny)){
-#     print(y.idx)
-#     which.idx <- which(y == y.idx)
-#
-#     cond.mean <- mean(z[which.idx], na.rm = T)
-#     expectile.vec[y.idx + 1] = cond.mean
-#   }
-#   conditional.expect[i,] = expectile.vec
-# }
-#
-#
-#
-#
-# quantile.vec <- rep(NA,Ny + 1)
-# for(y.idx in seq(0,Ny)){
-#   print(y.idx)
-#   which.idx <- which(y == y.idx)
-#   p <- mean(y <= y.idx)
-#   q <- quantile(z, p, na.rm = T)
-#   quantile.vec[y.idx + 1] = q
-# }
-#
-#
-#
-# lty=2
-#
-# plot(seq(0,Ny), quantile.vec, type = "l", col = "blue",xlim = c(0,Ny*4/2), ylim = c(30,Nz), xlab = "y", ylab = "z")
-# lines(seq(0,Ny), conditional.expect[1,], type = "l", col = "red", lty = 1)
-# lines(seq(0,Ny), conditional.expect[2,], type = "l", col = "red", lty = 2)
-# lines(seq(0,Ny), conditional.expect[3,], type = "l", col = "purple", lty = 1)
-# lines(seq(0,Ny), conditional.expect[4,], type = "l", col = "green", lty = 1)
-# lines(seq(0,Ny), conditional.expect[5,], type = "l", col = "green", lty = 2)
-# lines(seq(0,Ny), conditional.expect[6,], type = "l", col = "green", lty = 3)
-# lines(seq(0,Ny), conditional.expect[7,], type = "l", col = "green", lty = 4)
-# lines(seq(0,Ny), conditional.expect[8,], type = "l", col = "darkgreen", lty = 5)
-# legend(Ny, Nz, legend=c("Quantile (OT)", "Conditional (theta = -1)",
-#                         "Conditional (theta = -.5)",
-#                         "Conditional (theta = 0)",
-#                         "Conditional (theta = 0.3)",
-#                         "Conditional (theta = 0.5)",
-#                         "Conditional (theta = 0.8)",
-#                         "Conditional (theta = 0.9)",
-#                         "Conditional (theta = 1)"),
-#        col=c("blue","red", "red", "purple",
-#              rep("green", 4), "darkgreen"), lty=c(1,1,2,1,1:6), cex=0.8)
-#
-#
 
 
 

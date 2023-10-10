@@ -4,7 +4,7 @@ library(dplyr)
 library(dnoiseR)
 library(ggplot2)
 library(sandwich)
-source("R/paper_functions.R")
+#source("R/paper_functions.R")
 #source("R/01_functions.R")
 # model 1
 # model 2
@@ -19,7 +19,7 @@ if(slurm_arrayid == ""){
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
 }
-
+latent.pwl <- T
 
 include.bootstrap = T
 B.boot = 50
@@ -29,27 +29,21 @@ n.sims = 5 # TODO: Change this to 500
 #n.set <- c(1000, 2000, 5000)
 
 
-n.true <- 10**(6)
+n.true <- 10**(7)
 
-Ny <- 30 # TODO: return to 15
+Ny <- 30
 Nz <- 30
 
 R.bins = 1000
 
 cond.y <- generate_cond_binomial(Ny)
 cond.z <- generate_cond_binomial(Nz)
-# h1 <- 2
-# h2 <- 0.5
-# cond.y <- conditional_mkm(Ny, gaussian_kernel, h1)
-# cond.z <- conditional_mkm(Nz, gaussian_kernel, h2)
 
-#rho.grid = c(0.3,0.3,0.7,0.7)
 
 
 
 # uniform age sample
-#X <- round(runif(n.true, min = 54.5, max = 80.5))
-x.grid = c(55,63,72,80)
+
 x.grid = seq(55,80)
 X <- rep(x.grid, n.true/4)
 X <- rep(x.grid, round(n.true/length(x.grid)))
@@ -61,9 +55,10 @@ n.set <- round(c(100,200,500,1000, 2000, 5000)/13)*13 # smoothed it over
 rho.grid = 0.8*(x.grid < 61) +  0.2*(x.grid >= 61)
 
 #X <- rep(c(55,80), n.true/2)
-lat.mu <- (-1/10*(X - 67.5)) +  0.5
 lat.mu <- -(1/10*(X - 67.5))^2 +  0.5
-
+if(latent.pwl){
+  lat.mu <- 0.5 + pmin( -(1/100*(X - 71)),  -(1/5*(X - 71)))
+}
 
 
 run.true.pop = F
@@ -85,6 +80,9 @@ if(run.true.pop){
   #plot(hist(z,breaks = 36))
 } else {
   beta.true <- 0
+  if(latent.pwl){
+    beta.true <- -0.403403
+  }
 }
 
 
@@ -95,35 +93,18 @@ ker.set <- list(gaussian_kernel.2)
 
 compute.true.latent = T
 if(compute.true.latent){
-  x.grid = c(55,63,72,80)
   x.grid = seq(55,80)
-  X <- rep(x.grid, n.true/4) # true.x
   X <- rep(x.grid, round(n.true/length(x.grid)))
 
   lat.mu <- -(1/10*(X - 67.5))^2 +  0.5
-  #lat.mu2 <- (-1/5*(X - 67.5) +  2.5)*sin(X)
-
-  #U <- runif(n.true)
-  #gamma2 <- logistic(lat.mu2 +  (U <= 1/2)*(2 + rnorm(length(X),sd = 1)) -(U > 1/2)*(2 + rnorm(length(X),sd = 1)))
+  if(latent.pwl){
+    lat.mu <- 0.5 + pmin( -(1/100*(X - 71)),  -(1/5*(X - 71)))
+  }
 
   gamma2 <- logistic(lat.mu +rnorm(length(X),sd = 1))
-  #gamma.true.seq <- logistic(lat.mu +rnorm(length(X),sd = 1))#gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-  # one to one mapping of latent traits
-  gamma1 <- sqrt(gamma2) #gamma2**(2)
-  #gamma1 <- gamma2*(1/5) + 4/5
-  # true.mix.y <- hist(gamma1, breaks = seq(0,1,length.out = 1001))$density
-  # true.mix.z <- hist(gamma2, breaks = seq(0,1,length.out = 1001))$density
-  # true.mix.y <- true.mix.y/sum(true.mix.y)
-  # true.mix.z <- true.mix.z/sum(true.mix.z)
-  # plot(hist(gamma1, breaks = 50))
-  # plot(hist(gamma2, breaks = 50))
-  # y1 <- rbinom(length(gamma1),Ny, gamma1)
-  # y2 <- rbinom(length(gamma1),Ny, gamma1)
-  # z1 <- rbinom(length(gamma2),Nz, gamma2)
-  # z2 <- rbinom(length(gamma2),Nz, gamma2)
 
-  # Y <- matrix(c(y1,y2), ncol= 2)
-  # Z <- matrix(c(z1,z2), ncol= 2)
+  gamma1 <- sqrt(gamma2) #gamma2**(2)
+
   round.X <- round(X)
   X.ref = data.frame("age" = round.X)
   X.un <- data.frame(tmp = sort(unique((X.ref[, ref.cols]))))
@@ -145,18 +126,8 @@ if(compute.true.latent){
     mixture.z.set[j,] = mixture.z
   }
 }
-# plot(mixture.y.set[1,])
-# plot(mixture.y.set[2,])
-# plot(mixture.y.set[3,])
-# plot(mixture.y.set[4,])
-#
-#
-# plot(mixture.z.set[1,])
-# plot(mixture.z.set[2,])
-# plot(mixture.z.set[3,])
-# plot(mixture.z.set[4,])
 
-#unif.1 <- scale_kernel(uniform_kernel,1)
+
 gaussian_kernel.2 <- scale_kernel(gaussian_kernel,2)
 ref.cols <- "age"
 ker.set <- list(gaussian_kernel.2)
@@ -184,26 +155,43 @@ cover.bootstrap <- matrix(NA, nrow = n.sims, ncol = length(n.set))
 
 load.prior.results = F
 if(load.prior.results){
-  dev.cc <- readRDS("data/06_dev_cc.rds")
-  dev <- readRDS("data/06_dev.rds")
-  dev.cov.adj <- readRDS("data/06_dev_cov_adj.rds")
-  dev.true.latent <- readRDS("data/06_dev_true_latent.rds")
-  dev.z.score <- readRDS("data/06_dev_zscore.rds")
-  dev.quantile <- readRDS("data/06_dev_quantile.rds")
-  dev.bootstrap <- readRDS("data/06_dev_bootstrap.rds")
+  if(latent.pwl){
+    dev.cc <- readRDS("data/06_pwl_dev_cc.rds")
+    dev <- readRDS("data/06_pwl_dev.rds")
+    dev.cov.adj <- readRDS("data/06_pwl_dev_cov_adj.rds")
+    dev.true.latent <- readRDS("data/06_pwl_dev_true_latent.rds")
+    dev.z.score <- readRDS("data/06_pwl_dev_zscore.rds")
+    dev.quantile <- readRDS("data/06_pwl_dev_quantile.rds")
+    dev.bootstrap <- readRDS("data/06_pwl_dev_bootstrap.rds")
 
-  cover.cc <- readRDS( "data/06_cover_cc.rds")
-  cover <- readRDS("data/06_cover.rds")
-  cover.cov.adj <- readRDS("data/06_cover_cov_adj.rds")
-  cover.true.latent <- readRDS("data/06_cover_true_latent.rds")
-  cover.z.score <- readRDS("data/06_cover_zscore.rds")
-  cover.quantile <- readRDS("data/06_cover_quantile.rds")
-  dev.bootstrap <- readRDS("data/06_dev_bootstrap.rds")
+    cover.cc <- readRDS( "data/06_pwl_cover_cc.rds")
+    cover <- readRDS("data/06_pwl_cover.rds")
+    cover.cov.adj <- readRDS("data/06_pwl_cover_cov_adj.rds")
+    cover.true.latent <- readRDS("data/06_pwl_cover_true_latent.rds")
+    cover.z.score <- readRDS("data/06_pwl_cover_zscore.rds")
+    cover.quantile <- readRDS("data/06_pwl_cover_quantile.rds")
+    dev.bootstrap <- readRDS("data/06_pwl_dev_bootstrap.rds")
+  } else {
+    dev.cc <- readRDS("data/06_dev_cc.rds")
+    dev <- readRDS("data/06_dev.rds")
+    dev.cov.adj <- readRDS("data/06_dev_cov_adj.rds")
+    dev.true.latent <- readRDS("data/06_dev_true_latent.rds")
+    dev.z.score <- readRDS("data/06_dev_zscore.rds")
+    dev.quantile <- readRDS("data/06_dev_quantile.rds")
+    dev.bootstrap <- readRDS("data/06_dev_bootstrap.rds")
+
+    cover.cc <- readRDS( "data/06_cover_cc.rds")
+    cover <- readRDS("data/06_cover.rds")
+    cover.cov.adj <- readRDS("data/06_cover_cov_adj.rds")
+    cover.true.latent <- readRDS("data/06_cover_true_latent.rds")
+    cover.z.score <- readRDS("data/06_cover_zscore.rds")
+    cover.quantile <- readRDS("data/06_cover_quantile.rds")
+    dev.bootstrap <- readRDS("data/06_dev_bootstrap.rds")
+  }
+
 }
 
 #unif.1 <- scale_kernel(uniform_kernel,1)
-
-
 
 ref.cols <- "age"
 gaussian_kernel.1 <- scale_kernel(gaussian_kernel,5/(n.set[1]**(1/5)))
@@ -226,18 +214,13 @@ ker.list <- list(ker.set.1,
                  ker.set.4,
                  ker.set.5,
                  ker.set.6)
-# gaussian_kernel.10 <- scale_kernel(gaussian_kernel,10)
-# ref.cols <- "age"
-# ker.set <- list(gaussian_kernel.10)
 
 
 mu.y = 0.0 #0.1 #0.3
 mu.z = 0.0 #0.1 #0.3
 n.impute = 50
 fmla <- formula(outcome ~ age )
-# we want to plot coverage and bias of conversion
 
-# TODO: Try again in case gamma2 is bimodal
 
 set.seed(id) # finding the correct id's for the simulations.
 sim.start = 1
@@ -245,24 +228,44 @@ sim.start = 1
 for(sim in sim.start:n.sims){
   cat(paste0("Number of sims: ", sim, "/",n.sims), end = "\n")
   if(sim %% 20 == 0){
+    if(latent.pwl){
+      saveRDS(dev.cc, paste0("data/06_pwl_dev_cc",id, ".rds"))
+      saveRDS(dev, paste0("data/06_pwl_dev",id, ".rds"))
+      saveRDS(dev.cov.adj, paste0("data/06_pwl_dev_cov_adj",id, ".rds"))
+      saveRDS(dev.true.latent, paste0("data/06_pwl_dev_true_latent",id, ".rds"))
+      saveRDS(dev.z.score, paste0("data/06_pwl_dev_zscore",id, ".rds"))
+      saveRDS(dev.quantile, paste0("data/06_pwl_dev_quantile",id, ".rds"))
 
-    saveRDS(dev.cc, paste0("data/06_dev_cc",id, ".rds"))
-    saveRDS(dev, paste0("data/06_dev",id, ".rds"))
-    saveRDS(dev.cov.adj, paste0("data/06_dev_cov_adj",id, ".rds"))
-    saveRDS(dev.true.latent, paste0("data/06_dev_true_latent",id, ".rds"))
-    saveRDS(dev.z.score, paste0("data/06_dev_zscore",id, ".rds"))
-    saveRDS(dev.quantile, paste0("data/06_dev_quantile",id, ".rds"))
+      saveRDS(cover.cc, paste0("data/06_pwl_cover_cc",id, ".rds"))
+      saveRDS(cover, paste0("data/06_pwl_cover",id, ".rds"))
+      saveRDS(cover.cov.adj, paste0("data/06_pwl_cover_cov_adj",id, ".rds"))
+      saveRDS(cover.true.latent, paste0("data/06_pwl_cover_true_latent",id, ".rds"))
+      saveRDS(cover.z.score, paste0("data/06_pwl_cover_zscore",id, ".rds"))
+      saveRDS(cover.quantile, paste0("data/06_pwl_cover_quantile",id, ".rds"))
+      if(include.bootstrap){
+        saveRDS(dev.bootstrap, paste0("data/06_pwl_dev_bootstrap",id, ".rds"))
+        saveRDS(cover.bootstrap, paste0("data/06_pwl_cover_bootstrap",id, ".rds"))
+      }
+    } else {
+      saveRDS(dev.cc, paste0("data/06_dev_cc",id, ".rds"))
+      saveRDS(dev, paste0("data/06_dev",id, ".rds"))
+      saveRDS(dev.cov.adj, paste0("data/06_dev_cov_adj",id, ".rds"))
+      saveRDS(dev.true.latent, paste0("data/06_dev_true_latent",id, ".rds"))
+      saveRDS(dev.z.score, paste0("data/06_dev_zscore",id, ".rds"))
+      saveRDS(dev.quantile, paste0("data/06_dev_quantile",id, ".rds"))
 
-    saveRDS(cover.cc, paste0("data/06_cover_cc",id, ".rds"))
-    saveRDS(cover, paste0("data/06_cover",id, ".rds"))
-    saveRDS(cover.cov.adj, paste0("data/06_cover_cov_adj",id, ".rds"))
-    saveRDS(cover.true.latent, paste0("data/06_cover_true_latent",id, ".rds"))
-    saveRDS(cover.z.score, paste0("data/06_cover_zscore",id, ".rds"))
-    saveRDS(cover.quantile, paste0("data/06_cover_quantile",id, ".rds"))
-    if(include.bootstrap){
-      saveRDS(dev.bootstrap, paste0("data/06_dev_bootstrap",id, ".rds"))
-      saveRDS(cover.bootstrap, paste0("data/06_cover_bootstrap",id, ".rds"))
+      saveRDS(cover.cc, paste0("data/06_cover_cc",id, ".rds"))
+      saveRDS(cover, paste0("data/06_cover",id, ".rds"))
+      saveRDS(cover.cov.adj, paste0("data/06_cover_cov_adj",id, ".rds"))
+      saveRDS(cover.true.latent, paste0("data/06_cover_true_latent",id, ".rds"))
+      saveRDS(cover.z.score, paste0("data/06_cover_zscore",id, ".rds"))
+      saveRDS(cover.quantile, paste0("data/06_cover_quantile",id, ".rds"))
+      if(include.bootstrap){
+        saveRDS(dev.bootstrap, paste0("data/06_dev_bootstrap",id, ".rds"))
+        saveRDS(cover.bootstrap, paste0("data/06_cover_bootstrap",id, ".rds"))
+      }
     }
+
   }
 
   for(i in seq(length(n.set))){
@@ -273,11 +276,11 @@ for(sim in sim.start:n.sims){
     X <- rep(x.grid, each = n/4) # grid for different observed X values
     X <- rep(x.grid, round(n/length(x.grid)))
 
-    #TODO: ensure that this is set at the beginning with an x.grid parameter
-    #X <- rep(c(55,80), n/2)
 
-    lat.mu2 <- -(1/10*(X - 67.5))^2 +  0.5
-    #lat.mu2 <- (-1/5*(X - 67.5) +  2.5)*sin(X)
+    lat.mu <- -(1/10*(X - 67.5))^2 +  0.5
+    if(latent.pwl){
+      lat.mu <- 0.5 + pmin( -(1/100*(X - 71)),  -(1/5*(X - 71)))
+    }
 
     # missingness pattern
     idx1 <- c()
@@ -292,26 +295,10 @@ for(sim in sim.start:n.sims){
 
 
     U <- runif(n)
-    gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-    #gamma.true.seq <- logistic(lat.mu +rnorm(length(X),sd = 1))#gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-    # one to one mapping of latent traits
-    gamma1 <- sqrt(gamma2)
-    #gamma1 <- gamma2*(1/5) + 4/5
-    # true.mix.y <- hist(gamma1, breaks = seq(0,1,length.out = 1001))$density
-    # true.mix.z <- hist(gamma2, breaks = seq(0,1,length.out = 1001))$density
-    # true.mix.y <- true.mix.y/sum(true.mix.y)
-    # true.mix.z <- true.mix.z/sum(true.mix.z)
-    # plot(hist(gamma1, breaks = 50))
-    # plot(hist(gamma2, breaks = 50))
-    # y1 <- rbinom(length(gamma1),Ny, gamma1)
-    # y2 <- rbinom(length(gamma1),Ny, gamma1)
-    # z1 <- rbinom(length(gamma2),Nz, gamma2)
-    # z2 <- rbinom(length(gamma2),Nz, gamma2)
+    gamma2 <- logistic(lat.mu +rnorm(length(X),sd = 1))
 
-    # Y <- matrix(c(y1,y2), ncol= 2)
-    # Z <- matrix(c(z1,z2), ncol= 2)
-    # Y <- simulate_test_cond(obs.set = rep(2,length(gamma1)),cond.y ,gamma1)
-    # Z <- simulate_test_cond(obs.set = rep(2,length(gamma2)),cond.z ,gamma2)
+    gamma1 <- sqrt(gamma2)
+
     Y <- simulate_test_cond(obs.set = rep(1,length(gamma1)),cond.y ,gamma1)
     Z <- simulate_test_cond(obs.set = rep(1,length(gamma2)),cond.z ,gamma2)
     y1 <- Y[,1]
@@ -326,8 +313,7 @@ for(sim in sim.start:n.sims){
     X.z <- X[idx2]
     Y.train <- cbind(Y, X.y)
     Z.train <- cbind(Z, X.z)
-    # colnames(Y.train) = c("y1", "y2","age") # do we need any of these?
-    # colnames(Z.train) = c("z1", "z2","age")
+
     colnames(Y.train) = c("y", "age") # do we need any of these?
     colnames(Z.train) = c("z", "age")
     cc.sim.data <- data.frame("Z" = Z[,1], "age" = X.z)
@@ -439,28 +425,50 @@ for(sim in sim.start:n.sims){
 
 ########
 
-saveRDS(dev.cc, paste0("data/06_dev_cc",id, ".rds"))
-saveRDS(dev, paste0("data/06_dev",id, ".rds"))
-saveRDS(dev.cov.adj, paste0("data/06_dev_cov_adj",id, ".rds"))
-saveRDS(dev.true.latent, paste0("data/06_dev_true_latent",id, ".rds"))
-saveRDS(dev.z.score, paste0("data/06_dev_zscore",id, ".rds"))
-saveRDS(dev.quantile, paste0("data/06_dev_quantile",id, ".rds"))
+if(latent.pwl){
+  saveRDS(dev.cc, paste0("data/06_pwl_dev_cc",id, ".rds"))
+  saveRDS(dev, paste0("data/06_pwl_dev",id, ".rds"))
+  saveRDS(dev.cov.adj, paste0("data/06_pwl_dev_cov_adj",id, ".rds"))
+  saveRDS(dev.true.latent, paste0("data/06_pwl_dev_true_latent",id, ".rds"))
+  saveRDS(dev.z.score, paste0("data/06_pwl_dev_zscore",id, ".rds"))
+  saveRDS(dev.quantile, paste0("data/06_pwl_dev_quantile",id, ".rds"))
 
-saveRDS(cover.cc, paste0("data/06_cover_cc",id, ".rds"))
-saveRDS(cover, paste0("data/06_cover",id, ".rds"))
-saveRDS(cover.cov.adj, paste0("data/06_cover_cov_adj",id, ".rds"))
-saveRDS(cover.true.latent, paste0("data/06_cover_true_latent",id, ".rds"))
-saveRDS(cover.z.score, paste0("data/06_cover_zscore",id, ".rds"))
-saveRDS(cover.quantile, paste0("data/06_cover_quantile",id, ".rds"))
+  saveRDS(cover.cc, paste0("data/06_pwl_cover_cc",id, ".rds"))
+  saveRDS(cover, paste0("data/06_pwl_cover",id, ".rds"))
+  saveRDS(cover.cov.adj, paste0("data/06_pwl_cover_cov_adj",id, ".rds"))
+  saveRDS(cover.true.latent, paste0("data/06_pwl_cover_true_latent",id, ".rds"))
+  saveRDS(cover.z.score, paste0("data/06_pwl_cover_zscore",id, ".rds"))
+  saveRDS(cover.quantile, paste0("data/06_pwl_cover_quantile",id, ".rds"))
 
-if(include.bootstrap){
-  saveRDS(dev.bootstrap, paste0("data/06_dev_bootstrap",id, ".rds"))
-  saveRDS(cover.bootstrap, paste0("data/06_cover_bootstrap",id, ".rds"))
+  if(include.bootstrap){
+    saveRDS(dev.bootstrap, paste0("data/06_pwl_dev_bootstrap",id, ".rds"))
+    saveRDS(cover.bootstrap, paste0("data/06_pwl_cover_bootstrap",id, ".rds"))
+  }
+} else {
+  saveRDS(dev.cc, paste0("data/06_dev_cc",id, ".rds"))
+  saveRDS(dev, paste0("data/06_dev",id, ".rds"))
+  saveRDS(dev.cov.adj, paste0("data/06_dev_cov_adj",id, ".rds"))
+  saveRDS(dev.true.latent, paste0("data/06_dev_true_latent",id, ".rds"))
+  saveRDS(dev.z.score, paste0("data/06_dev_zscore",id, ".rds"))
+  saveRDS(dev.quantile, paste0("data/06_dev_quantile",id, ".rds"))
+
+  saveRDS(cover.cc, paste0("data/06_cover_cc",id, ".rds"))
+  saveRDS(cover, paste0("data/06_cover",id, ".rds"))
+  saveRDS(cover.cov.adj, paste0("data/06_cover_cov_adj",id, ".rds"))
+  saveRDS(cover.true.latent, paste0("data/06_cover_true_latent",id, ".rds"))
+  saveRDS(cover.z.score, paste0("data/06_cover_zscore",id, ".rds"))
+  saveRDS(cover.quantile, paste0("data/06_cover_quantile",id, ".rds"))
+
+  if(include.bootstrap){
+    saveRDS(dev.bootstrap, paste0("data/06_dev_bootstrap",id, ".rds"))
+    saveRDS(cover.bootstrap, paste0("data/06_cover_bootstrap",id, ".rds"))
+  }
 }
 
 
 
-make.plots = F
+
+make.plots = T
 
 if(make.plots){
   library(ggpubr)
@@ -468,39 +476,77 @@ if(make.plots){
   png.height = 1000
   png.res = 200
 
-  # update this section to concatenate the results
-  dev.cc <- readRDS("data/06c_dev_cc1.rds")
-  dev <- readRDS("data/06c_dev1.rds")
-  dev.cov.adj <- readRDS("data/06c_dev_cov_adj1.rds")
-  dev.true.latent <-  readRDS("data/06c_dev_true_latent1.rds")
-  dev.z.score <- readRDS("data/06c_dev_zscore1.rds")
-  dev.quantile <- readRDS("data/06c_dev_quantile1.rds")
-  dev.bootstrap <- readRDS("data/06c_dev_bootstrap1.rds")
+  if(latent.pwl){
+    dev.cc <- readRDS("data/06_dev_cc1.rds")
+    dev <- readRDS("data/06_dev1.rds")
+    dev.cov.adj <- readRDS("data/06_dev_cov_adj1.rds")
+    dev.true.latent <-  readRDS("data/06_dev_true_latent1.rds")
+    dev.z.score <- readRDS("data/06_dev_zscore1.rds")
+    dev.quantile <- readRDS("data/06_dev_quantile1.rds")
+    dev.bootstrap <- readRDS("data/06_dev_bootstrap1.rds")
 
-  cover.cc <- readRDS("data/06c_cover_cc1.rds")
-  cover <- readRDS("data/06c_cover1.rds")
-  cover.cov.adj <- readRDS("data/06c_cover_cov_adj1.rds")
-  cover.true.latent <-  readRDS("data/06c_cover_true_latent1.rds")
-  cover.z.score <- readRDS("data/06c_cover_zscore1.rds")
-  cover.quantile <- readRDS("data/06c_cover_quantile1.rds")
-  cover.bootstrap <- readRDS("data/06c_cover_bootstrap1.rds")
+    cover.cc <- readRDS("data/06_cover_cc1.rds")
+    cover <- readRDS("data/06_cover1.rds")
+    cover.cov.adj <- readRDS("data/06_cover_cov_adj1.rds")
+    cover.true.latent <-  readRDS("data/06_cover_true_latent1.rds")
+    cover.z.score <- readRDS("data/06_cover_zscore1.rds")
+    cover.quantile <- readRDS("data/06_cover_quantile1.rds")
+    cover.bootstrap <- readRDS("data/06_cover_bootstrap1.rds")
+  } else {
+    dev.cc <- readRDS("data/06_pwl_dev_cc1.rds")
+    dev <- readRDS("data/06_pwl_dev1.rds")
+    dev.cov.adj <- readRDS("data/06_pwl_dev_cov_adj1.rds")
+    dev.true.latent <-  readRDS("data/06_pwl_dev_true_latent1.rds")
+    dev.z.score <- readRDS("data/06_pwl_dev_zscore1.rds")
+    dev.quantile <- readRDS("data/06_pwl_dev_quantile1.rds")
+    dev.bootstrap <- readRDS("data/06_pwl_dev_bootstrap1.rds")
+
+    cover.cc <- readRDS("data/06_pwl_cover_cc1.rds")
+    cover <- readRDS("data/06_pwl_cover1.rds")
+    cover.cov.adj <- readRDS("data/06_pwl_cover_cov_adj1.rds")
+    cover.true.latent <-  readRDS("data/06_pwl_cover_true_latent1.rds")
+    cover.z.score <- readRDS("data/06_pwl_cover_zscore1.rds")
+    cover.quantile <- readRDS("data/06_pwl_cover_quantile1.rds")
+    cover.bootstrap <- readRDS("data/06_pwl_cover_bootstrap1.rds")
+  }
+
+
   for(j in seq(2,200)){
 
-    dev.cc.tmp <- readRDS(paste0("data/06c_dev_cc",j,".rds"))
-    dev.tmp <- readRDS(paste0("data/06c_dev",j,".rds"))
-    dev.cov.adj.tmp <- readRDS(paste0("data/06c_dev_cov_adj",j,".rds"))
-    dev.true.latent.tmp <- readRDS(paste0("data/06c_dev_true_latent",j,".rds"))
-    dev.z.score.tmp <- readRDS(paste0("data/06c_dev_zscore",j,".rds"))
-    dev.quantile.tmp <- readRDS(paste0("data/06c_dev_quantile",j,".rds"))
-    dev.bootstrap.tmp <- readRDS(paste0("data/06c_dev_bootstrap",j,".rds"))
+    if(latent.pwl){
+      dev.cc.tmp <- readRDS(paste0("data/06_pwl_dev_cc",j,".rds"))
+      dev.tmp <- readRDS(paste0("data/06_pwl_dev",j,".rds"))
+      dev.cov.adj.tmp <- readRDS(paste0("data/06_pwl_dev_cov_adj",j,".rds"))
+      dev.true.latent.tmp <- readRDS(paste0("data/06_pwl_dev_true_latent",j,".rds"))
+      dev.z.score.tmp <- readRDS(paste0("data/06_pwl_dev_zscore",j,".rds"))
+      dev.quantile.tmp <- readRDS(paste0("data/06_pwl_dev_quantile",j,".rds"))
+      dev.bootstrap.tmp <- readRDS(paste0("data/06_pwl_dev_bootstrap",j,".rds"))
 
-    cover.cc.tmp <- readRDS(paste0("data/06c_cover_cc",j,".rds"))
-    cover.tmp <- readRDS(paste0("data/06c_cover",j,".rds"))
-    cover.cov.adj.tmp <- readRDS(paste0("data/06c_cover_cov_adj",j,".rds"))
-    cover.true.latent.tmp <- readRDS(paste0("data/06c_cover_true_latent",j,".rds"))
-    cover.z.score.tmp <- readRDS(paste0("data/06c_cover_zscore",j,".rds"))
-    cover.quantile.tmp <- readRDS(paste0("data/06c_cover_quantile",j,".rds"))
-    cover.bootstrap.tmp <- readRDS(paste0("data/06c_cover_bootstrap",j,".rds"))
+      cover.cc.tmp <- readRDS(paste0("data/06_pwl_cover_cc",j,".rds"))
+      cover.tmp <- readRDS(paste0("data/06_pwl_cover",j,".rds"))
+      cover.cov.adj.tmp <- readRDS(paste0("data/06_pwl_cover_cov_adj",j,".rds"))
+      cover.true.latent.tmp <- readRDS(paste0("data/06_pwl_cover_true_latent",j,".rds"))
+      cover.z.score.tmp <- readRDS(paste0("data/06_pwl_cover_zscore",j,".rds"))
+      cover.quantile.tmp <- readRDS(paste0("data/06_pwl_cover_quantile",j,".rds"))
+      cover.bootstrap.tmp <- readRDS(paste0("data/06_pwl_cover_bootstrap",j,".rds"))
+    } else {
+      dev.cc.tmp <- readRDS(paste0("data/06_dev_cc",j,".rds"))
+      dev.tmp <- readRDS(paste0("data/06_dev",j,".rds"))
+      dev.cov.adj.tmp <- readRDS(paste0("data/06_dev_cov_adj",j,".rds"))
+      dev.true.latent.tmp <- readRDS(paste0("data/06_dev_true_latent",j,".rds"))
+      dev.z.score.tmp <- readRDS(paste0("data/06_dev_zscore",j,".rds"))
+      dev.quantile.tmp <- readRDS(paste0("data/06_dev_quantile",j,".rds"))
+      dev.bootstrap.tmp <- readRDS(paste0("data/06_dev_bootstrap",j,".rds"))
+
+      cover.cc.tmp <- readRDS(paste0("data/06_cover_cc",j,".rds"))
+      cover.tmp <- readRDS(paste0("data/06_cover",j,".rds"))
+      cover.cov.adj.tmp <- readRDS(paste0("data/06_cover_cov_adj",j,".rds"))
+      cover.true.latent.tmp <- readRDS(paste0("data/06_cover_true_latent",j,".rds"))
+      cover.z.score.tmp <- readRDS(paste0("data/06_cover_zscore",j,".rds"))
+      cover.quantile.tmp <- readRDS(paste0("data/06_cover_quantile",j,".rds"))
+      cover.bootstrap.tmp <- readRDS(paste0("data/06_cover_bootstrap",j,".rds"))
+    }
+
 
     dev.cc <- rbind(dev.cc, dev.cc.tmp)
     dev <- rbind(dev, dev.tmp)
@@ -550,8 +596,8 @@ if(make.plots){
 
   res.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (Cov. Adj.)", length(n.set)),
-                                      rep("DNOISE (Oracle)", length(n.set)),
+                                      rep("DNOISE (cov.adj.)", length(n.set)),
+                                      rep("DNOISE (T.L.)", length(n.set)),
                                       rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
                                       rep("Quantile", length(n.set))),
@@ -568,38 +614,52 @@ if(make.plots){
                                        z.score.rmse.sd,quantile.rmse.sd))
 
 
-  accepted.methods = c("Complete Case", "DNOISE (Oracle)", "DNOISE (Bootstrap)", "Z Score", "Quantile")
-
-
-  res.data <- res.data %>%filter(method %in% accepted.methods)
   plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
-    geom_line() +
-    ggtitle("Bias of Regression Estimate") +
-    ylim(-0.25,0.25)#+
+    geom_line()  #+
   #geom_line(aes(x = n, y = rmse, color = method)) #+
   #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))
 
   plt.bias
 
-  png(filename = "plots/sim_binomial_bias.png",
-      width = png.width, height = png.height, res = png.res)
+  if(latent.pwl){
+    png(filename = "plots/sim_binomial_bias_pwl.png",
+        width = png.width, height = png.height, res = png.res)
 
-  plt.bias
-  # Close the pdf file
-  dev.off()
+    plt.bias
+    # Close the pdf file
+    dev.off()
+  } else{
+    png(filename = "plots/sim_binomial_bias.png",
+        width = png.width, height = png.height, res = png.res)
+
+    plt.bias
+    # Close the pdf file
+    dev.off()
+  }
+
 
   plt.rmse <- ggplot(res.data, aes(x = log(n), y = log(rmse), color = method)) +
     geom_line() +
-    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))+
-    ggtitle("RMSE of Regression Estimate")
+    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))
 
   plt.rmse
-  png(filename = "plots/sim_binomial_rmse.png",
-      width = png.width, height = png.height, res = png.res)
 
-  plt.rmse
-  # Close the pdf file
-  dev.off()
+  if(latent.pwl){
+    png(filename = "plots/sim_binomial_rmse_pwl.png",
+        width = png.width, height = png.height, res = png.res)
+
+    plt.rmse
+    # Close the pdf file
+    dev.off()
+  } else {
+    png(filename = "plots/sim_binomial_rmse.png",
+        width = png.width, height = png.height, res = png.res)
+
+    plt.rmse
+    # Close the pdf file
+    dev.off()
+  }
+
 
 
 
@@ -617,8 +677,8 @@ if(make.plots){
 
   cov.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (Cov. Adj.)", length(n.set)),
-                                      rep("DNOISE (Oracle)", length(n.set)),
+                                      rep("DNOISE (cov. adj.)", length(n.set)),
+                                      rep("DNOISE (T.L.)", length(n.set)),
                                       rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
                                       rep("Quantile", length(n.set))),
@@ -627,189 +687,36 @@ if(make.plots){
                          "error" = cov.error)
 
 
-  cov.data <- cov.data %>% filter(method %in% accepted.methods)
+  #cov.data <- cov.data %>% filter(n != 500)
   plt.coverage <- ggplot(cov.data, aes(x = log(n), y = coverage, color = method)) +
     geom_line(position=position_dodge(width=0.2)) +
     geom_errorbar(aes(ymin = coverage - 2*error, ymax = coverage + 2*error), width=0.5,
                   linewidth=0.5, position=position_dodge(width=0.2)) +
-    geom_hline(yintercept=0.95, linetype='dotted', col = 'black') +
-    ggtitle("Coverage of Regression Estimate")
+    geom_hline(yintercept=0.95, linetype='dotted', col = 'black')
 
   plt.coverage
 
-  png(filename = "plots/sim_binomial_coverage.png",
-      width = png.width, height = png.height, res = png.res)
+  if(latent.pwl){
+    png(filename = "plots/sim_binomial_coverage_pwl.png",
+        width = png.width, height = png.height, res = png.res)
 
-  plt.coverage
-  # Close the pdf file
-  dev.off()
+    plt.coverage
+    # Close the pdf file
+    dev.off()
+  } else {
+    png(filename = "plots/sim_binomial_coverage.png",
+        width = png.width, height = png.height, res = png.res)
+
+    plt.coverage
+    # Close the pdf file
+    dev.off()
+  }
+
 
 }
 
 
 
-
-
-
-
-
-
-#### AFTER HERE, REMOVE
-
-
-
-#
-#
-#
-#
-#
-#
-#
-# ### Current setup is pretty good,
-# #TODO: Add this idea of using quantile matching
-# # or a generalized optimal transport method.
-#
-# # colSDs <- function(X, ...){
-# #   X.means <- colMeans(X, ...)
-# #   v.out <- sqrt(colMeans((X.means - X)^2, ...))
-# #   return(v.out)
-# # }
-#
-#
-#
-#
-#
-# # expectile curve,
-#
-#
-#
-#
-# Ny = 200
-# Nz = 200
-# n = 500000
-# X <- round(runif(n, min = 54.5, max = 80.5))
-#
-# lat.mu2 <- -1/20*(X - 67.5) +  2.5
-# #lat.mu2 <- (-1/5*(X - 67.5) +  2.5)*sin(X)
-#
-#
-#
-# U <- runif(n)
-# gamma2 <- logistic(lat.mu2 +  (U <= 1/2)*(2 + rnorm(length(X),sd = 1)) -(U > 1/2)*(2 + rnorm(length(X),sd = 1)))
-# gamma2 <- logistic(lat.mu2 +  (U <= 1/2)*( rnorm(length(X),sd = 1)) -(U > 1/2)*( rnorm(length(X),sd = 1)))
-# #gamma2 <- logistic(lat.mu2 +rnorm(length(X),sd = 1))
-# # one to one mapping of latent traits
-# gamma1 <- sqrt(gamma2)
-# #gamma1 <- gamma2*(1/5) + 4/5
-# # true.mix.y <- hist(gamma1, breaks = seq(0,1,length.out = 1001))$density
-# # true.mix.z <- hist(gamma2, breaks = seq(0,1,length.out = 1001))$density
-# # true.mix.y <- true.mix.y/sum(true.mix.y)
-# # true.mix.z <- true.mix.z/sum(true.mix.z)
-# # plot(hist(gamma1, breaks = 50))
-# # plot(hist(gamma2, breaks = 50))
-# y1 <- rbinom(length(gamma1),Ny, gamma1)
-# z1 <- rbinom(length(gamma2),Nz, gamma2)
-#
-#
-#
-#
-# quantile.vec <- rep(NA,Ny + 1)
-# expectile.vec <- rep(NA,Ny + 1)
-#
-#
-#
-#
-# for(y.idx in seq(0,Ny)){
-#   print(y.idx)
-#   which.idx <- which(y1 == y.idx)
-#
-#   cond.mean <- mean(z1[which.idx], na.rm = T)
-#   expectile.vec[y.idx + 1] = cond.mean
-#
-#   p <- mean(y1 <= y.idx)
-#   #q <- ceiling(quantile(z1, p, type = 3))
-#   q <- quantile(z1, p, na.rm = T)
-#
-#   quantile.vec[y.idx + 1] = q
-# }
-#
-#
-# plot(seq(0,Ny), quantile.vec, type = "l", col = "blue")
-# lines(seq(0,Ny), expectile.vec, type = "l", col = "green")
-# legend(60, 60, legend=c("Quantile (OT)", "Conditional Expectation"),
-#        col=c("blue", "green"), lty=c(1,1), cex=0.8)
-#
-#
-#
-#
-#
-#
-#
-# library(mvtnorm)
-# theta.seq <- c(-1,-0.5,0,.3,.5,.8,.9,1)
-#
-#
-# n = 1000000
-# Ny = 60
-# Nz = 60
-# conditional.expect <- matrix(NA, nrow = length(theta.seq), ncol = Ny + 1)
-#
-# for(i in seq(length(theta.seq))){
-#   theta = theta.seq[i]
-#   sigma <- matrix(c(1,theta,theta,1), 2,2)
-#   X <- rmvnorm(n, sigma = sigma)
-#   p1 <- pnorm(X[,1])
-#   p2 <- pnorm(X[,2])
-#   y <- qbinom(p1,Ny, .5)
-#   z <- qbinom(p2,Nz, .8)
-#   expectile.vec <- rep(NA,Ny + 1)
-#   for(y.idx in seq(0,Ny)){
-#     print(y.idx)
-#     which.idx <- which(y == y.idx)
-#
-#     cond.mean <- mean(z[which.idx], na.rm = T)
-#     expectile.vec[y.idx + 1] = cond.mean
-#   }
-#   conditional.expect[i,] = expectile.vec
-# }
-#
-#
-#
-#
-# quantile.vec <- rep(NA,Ny + 1)
-# for(y.idx in seq(0,Ny)){
-#   print(y.idx)
-#   which.idx <- which(y == y.idx)
-#   p <- mean(y <= y.idx)
-#   q <- quantile(z, p, na.rm = T)
-#   quantile.vec[y.idx + 1] = q
-# }
-#
-#
-#
-# lty=2
-#
-# plot(seq(0,Ny), quantile.vec, type = "l", col = "blue",xlim = c(0,Ny*4/2), ylim = c(30,Nz), xlab = "y", ylab = "z")
-# lines(seq(0,Ny), conditional.expect[1,], type = "l", col = "red", lty = 1)
-# lines(seq(0,Ny), conditional.expect[2,], type = "l", col = "red", lty = 2)
-# lines(seq(0,Ny), conditional.expect[3,], type = "l", col = "purple", lty = 1)
-# lines(seq(0,Ny), conditional.expect[4,], type = "l", col = "green", lty = 1)
-# lines(seq(0,Ny), conditional.expect[5,], type = "l", col = "green", lty = 2)
-# lines(seq(0,Ny), conditional.expect[6,], type = "l", col = "green", lty = 3)
-# lines(seq(0,Ny), conditional.expect[7,], type = "l", col = "green", lty = 4)
-# lines(seq(0,Ny), conditional.expect[8,], type = "l", col = "darkgreen", lty = 5)
-# legend(Ny, Nz, legend=c("Quantile (OT)", "Conditional (theta = -1)",
-#                         "Conditional (theta = -.5)",
-#                         "Conditional (theta = 0)",
-#                         "Conditional (theta = 0.3)",
-#                         "Conditional (theta = 0.5)",
-#                         "Conditional (theta = 0.8)",
-#                         "Conditional (theta = 0.9)",
-#                         "Conditional (theta = 1)"),
-#        col=c("blue","red", "red", "purple",
-#              rep("green", 4), "darkgreen"), lty=c(1,1,2,1,1:6), cex=0.8)
-#
-#
 
 
 
