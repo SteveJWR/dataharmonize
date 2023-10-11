@@ -6,7 +6,7 @@ library(dplyr)
 library(dnoiseR)
 library(ggplot2)
 library(sandwich)
-source("R/paper_functions.R")
+#source("R/paper_functions.R")
 #source("R/01_functions.R")
 # model 1
 # model 2
@@ -115,20 +115,38 @@ res.z.score <- matrix(NA, nrow = n.sims, ncol = length(n.set))
 
 load.prior.results = F
 if(load.prior.results){
-  res  <- readRDS("data/05_pred.rds")
-  res.no.reg  <- readRDS("data/05_pred_no_reg.rds")
+  if(latent.pwl){
+    res  <- readRDS("data/05_pwl_pred.rds")
+    res.no.reg  <- readRDS("data/05_pwl_pred_no_reg.rds")
 
-  res.cov.adj <- readRDS("data/05_pred_cov_adj.rds")
-  res.cov.adj.small.h <- readRDS("data/05_pred_cov_adj_small_h.rds")
-  res.cov.adj.med.h <- readRDS("data/05_pred_cov_adj_med_h.rds")
-  res.cov.adj.large.h <- readRDS("data/05_pred_cov_adj_large_h.rds")
+    res.cov.adj <- readRDS("data/05_pwl_pred_cov_adj.rds")
+    res.cov.adj.small.h <- readRDS("data/05_pwl_pred_cov_adj_small_h.rds")
+    res.cov.adj.med.h <- readRDS("data/05_pwl_pred_cov_adj_med_h.rds")
+    res.cov.adj.large.h <- readRDS("data/05_pwl_pred_cov_adj_large_h.rds")
 
-  res.cov.adj.no.reg <- readRDS("data/05_pred_cov_adj_no_reg.rds")
-  res.cov.adj.small.h.no.reg <- readRDS("data/05_pred_cov_adj_small_h_no_reg.rds")
-  res.cov.adj.med.h.no.reg <- readRDS("data/05_pred_cov_adj_med_h_no_reg.rds")
-  res.cov.adj.large.h.no.reg <- readRDS("data/05_pred_cov_adj_large_h_no_reg.rds")
+    res.cov.adj.no.reg <- readRDS("data/05_pwl_pred_cov_adj_no_reg.rds")
+    res.cov.adj.small.h.no.reg <- readRDS("data/05_pwl_pred_cov_adj_small_h_no_reg.rds")
+    res.cov.adj.med.h.no.reg <- readRDS("data/05_pwl_pred_cov_adj_med_h_no_reg.rds")
+    res.cov.adj.large.h.no.reg <- readRDS("data/05_pwl_pred_cov_adj_large_h_no_reg.rds")
 
-  res.z.score <- readRDS("data/05_pred_zscore.rds")
+    res.z.score <- readRDS("data/05_pred_zscore.rds")
+  } else {
+    res  <- readRDS("data/05_pred.rds")
+    res.no.reg  <- readRDS("data/05_pred_no_reg.rds")
+
+    res.cov.adj <- readRDS("data/05_pred_cov_adj.rds")
+    res.cov.adj.small.h <- readRDS("data/05_pred_cov_adj_small_h.rds")
+    res.cov.adj.med.h <- readRDS("data/05_pred_cov_adj_med_h.rds")
+    res.cov.adj.large.h <- readRDS("data/05_pred_cov_adj_large_h.rds")
+
+    res.cov.adj.no.reg <- readRDS("data/05_pred_cov_adj_no_reg.rds")
+    res.cov.adj.small.h.no.reg <- readRDS("data/05_pred_cov_adj_small_h_no_reg.rds")
+    res.cov.adj.med.h.no.reg <- readRDS("data/05_pred_cov_adj_med_h_no_reg.rds")
+    res.cov.adj.large.h.no.reg <- readRDS("data/05_pred_cov_adj_large_h_no_reg.rds")
+
+    res.z.score <- readRDS("data/05_pred_zscore.rds")
+  }
+
 }
 
 
@@ -171,21 +189,38 @@ for(sim in sim.start:n.sims){
   cat(paste0("Number of sims: ", sim, "/",n.sims), end = "\n")
   if(sim %% 20 == 0){
 
+    if(latent.pwl){
+      saveRDS(res, paste0("data/05_pwl_pred",id, ".rds"))
+      saveRDS(res.no.reg, paste0("data/05_pwl_pred_no_reg",id, ".rds"))
 
-    saveRDS(res, paste0("data/05_pred",id, ".rds"))
-    saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
+      saveRDS(res.cov.adj, paste0("data/05_pwl_pred_cov_adj",id, ".rds"))
+      saveRDS(res.cov.adj.small.h, paste0("data/05_pwl_pred_cov_adj_small_h",id, ".rds"))
+      saveRDS(res.cov.adj.med.h, paste0("data/05_pwl_pred_cov_adj_med_h",id, ".rds"))
+      saveRDS(res.cov.adj.large.h, paste0("data/05_pwl_pred_cov_adj_large_h",id, ".rds"))
 
-    saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
-    saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
-    saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
-    saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
+      saveRDS(res.cov.adj.no.reg, paste0("data/05_pwl_pred_cov_adj_no_reg",id, ".rds"))
+      saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pwl_pred_cov_adj_small_h_no_reg",id, ".rds"))
+      saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pwl_pred_cov_adj_med_h_no_reg",id, ".rds"))
+      saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pwl_pred_cov_adj_large_h_no_reg",id, ".rds"))
 
-    saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
-    saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
-    saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
-    saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
+      saveRDS(res.z.score, paste0("data/05_pwl_pred_zscore",id, ".rds"))
+    } else {
+      saveRDS(res, paste0("data/05_pred",id, ".rds"))
+      saveRDS(res.no.reg, paste0("data/05_pred_no_reg",id, ".rds"))
 
-    saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
+      saveRDS(res.cov.adj, paste0("data/05_pred_cov_adj",id, ".rds"))
+      saveRDS(res.cov.adj.small.h, paste0("data/05_pred_cov_adj_small_h",id, ".rds"))
+      saveRDS(res.cov.adj.med.h, paste0("data/05_pred_cov_adj_med_h",id, ".rds"))
+      saveRDS(res.cov.adj.large.h, paste0("data/05_pred_cov_adj_large_h",id, ".rds"))
+
+      saveRDS(res.cov.adj.no.reg, paste0("data/05_pred_cov_adj_no_reg",id, ".rds"))
+      saveRDS(res.cov.adj.small.h.no.reg, paste0("data/05_pred_cov_adj_small_h_no_reg",id, ".rds"))
+      saveRDS(res.cov.adj.med.h.no.reg, paste0("data/05_pred_cov_adj_med_h_no_reg",id, ".rds"))
+      saveRDS(res.cov.adj.large.h.no.reg, paste0("data/05_pred_cov_adj_large_h_no_reg",id, ".rds"))
+
+      saveRDS(res.z.score, paste0("data/05_pred_zscore",id, ".rds"))
+    }
+
   }
 
   for(i in seq(length(n.set))){
@@ -375,9 +410,10 @@ if(latent.pwl){
 
 make.plots = F
 
-#TODO: Finish this set of plots
+
 if(make.plots){
   library(ggpubr)
+  library(abind)
   png.width = 1200
   png.height = 1000
   png.res = 200

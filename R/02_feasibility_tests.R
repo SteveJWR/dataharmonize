@@ -106,10 +106,11 @@ saveRDS(res2, paste0("data/feasibility_test_order_2_results_",kernel,ceiling(id/
 
 
 
-make.plots = F
+make.plots = T
 
 if(make.plots){
   library(ggpubr)
+  library(abind)
   png.width = 1200
   png.height = 1000
   png.res = 200
@@ -121,7 +122,7 @@ if(make.plots){
   H = 35
   h.set <- exp(seq(log(0.8), log(20), length.out = H))
 
-  kernel <- "Exponential" #"Exponential" #"Gaussian"
+  kernel <- "Gaussian" #"Exponential" #"Gaussian"
   # update this section to concatenate the results
   res1 <- readRDS(paste0("data/feasibility_test_order_1_results_",kernel,1, ".rds"))
   res2 <- readRDS(paste0("data/feasibility_test_order_2_results_",kernel,1, ".rds"))
@@ -160,7 +161,7 @@ if(make.plots){
     geom_vline(aes(xintercept = log(h.true)), linetype = "dashed") +
     geom_ribbon(aes(ymin = rejectProb - 2*rejectProb_sd, ymax = rejectProb + 2*rejectProb_sd, fill = SampleSize),alpha=0.3) +
     ggtitle(paste0(kernel, " Kernel First Order Feasibility Test : \u03B1 = ", alpha )) +
-    xlab("Bandwidth (h)") +
+    xlab("log-Bandwidth (h)") +
     ylab("Power")
 
   #geom_line(aes(x = n, y = rmse, color = method)) #+
