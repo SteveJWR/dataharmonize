@@ -419,7 +419,6 @@ if(make.plots){
   png.res = 200
 
 
-  #TODO: Finish the set of plots
   if(latent.pwl){
     res <- readRDS(paste0("data/05_pwl_pred",1, ".rds"))
     res.no.reg <- readRDS(paste0("data/05_pwl_pred_no_reg",1, ".rds"))
@@ -453,10 +452,13 @@ if(make.plots){
   }
 
 
-
+  skip.set = c(35,36)
   for(j in seq(2,200)){
 
     if(latent.pwl){
+      if(j %in% skip.set){
+        next
+      }
       res.tmp <- readRDS(paste0("data/05_pwl_pred",j, ".rds"))
       res.no.reg.tmp <- readRDS(paste0("data/05_pwl_pred_no_reg",j, ".rds"))
 
@@ -576,12 +578,12 @@ if(make.plots){
   #res.data.z$SampleSize
 
 
-  plt.predictions <- ggplot(res.data, aes(x = SampleSize, y = ce,
+  plt.predictions <- ggplot(res.data, aes(x = SampleSize, y = -ce,
                                           group = interaction(method, regularization),
                                           color = method, linetype = regularization)) +
     geom_line() +
     #geom_point() +
-    geom_errorbar(aes(ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
+    geom_errorbar(aes(ymin = -ce - 2*ce_se, ymax = -ce + 2*ce_se)) +
     #geom_line(data = res.data.z, aes(x = SampleSize, y = ce, group = method), color = "black", linetype = 4) +
     #geom_line(data = res.data.z, aes(x = SampleSize, y = ce,linetype = 3, group = method, color = "black")) +
     #geom_point(data = res.data.z, aes(x = SampleSize, y = ce,group = method, color = "black")) +
@@ -625,12 +627,12 @@ if(make.plots){
 
 
 
-  plt.predictions <- ggplot(res.data, aes(x = SampleSize, y = ce,
+  plt.predictions <- ggplot(res.data, aes(x = SampleSize, y = -ce,
                                           group = interaction(method, regularization),
                                           color = method, linetype = regularization)) +
     geom_line() +
     #geom_point() +
-    geom_errorbar(aes(ymin = ce - 2*ce_se, ymax = ce + 2*ce_se)) +
+    geom_errorbar(aes(ymin = -ce - 2*ce_se, ymax = -ce + 2*ce_se)) +
     #geom_line(data = res.data.z, aes(x = SampleSize, y = ce, group = method), color = "black", linetype = 4) +
     #geom_line(data = res.data.z, aes(x = SampleSize, y = ce,linetype = 3, group = method, color = "black")) +
     #geom_point(data = res.data.z, aes(x = SampleSize, y = ce,group = method, color = "black")) +
@@ -646,7 +648,7 @@ if(make.plots){
                                   "Z score Matching" = "black")) +
     coord_cartesian(
       xlim =c(0,5000),
-      ylim = c(2.5,3.5)
+      ylim = c(2.0,4.0)
     ) # can change the window for smoother plots
 
 

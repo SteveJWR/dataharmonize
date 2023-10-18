@@ -472,6 +472,7 @@ make.plots = T
 
 if(make.plots){
   library(ggpubr)
+  library(abind)
   png.width = 1200
   png.height = 1000
   png.res = 200
@@ -596,7 +597,7 @@ if(make.plots){
 
   res.data <- data.frame("method" = c(rep("Complete Case", length(n.set)),
                                       rep("DNOISE", length(n.set)),
-                                      rep("DNOISE (cov.adj.)", length(n.set)),
+                                      rep("DNOISE (cov. adj.)", length(n.set)),
                                       rep("DNOISE (T.L.)", length(n.set)),
                                       rep("DNOISE (Bootstrap)", length(n.set)),
                                       rep("Z Score", length(n.set)),
@@ -614,6 +615,7 @@ if(make.plots){
                                        z.score.rmse.sd,quantile.rmse.sd))
 
 
+  res.data <- res.data %>% filter(method != 'DNOISE (cov. adj.)') %>% filter(method != 'DNOISE')
   plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
     geom_line()  #+
   #geom_line(aes(x = n, y = rmse, color = method)) #+
@@ -687,7 +689,8 @@ if(make.plots){
                          "error" = cov.error)
 
 
-  #cov.data <- cov.data %>% filter(n != 500)
+  cov.data <- cov.data %>% filter(method != 'DNOISE (cov. adj.)') %>% filter(method != 'DNOISE')
+
   plt.coverage <- ggplot(cov.data, aes(x = log(n), y = coverage, color = method)) +
     geom_line(position=position_dodge(width=0.2)) +
     geom_errorbar(aes(ymin = coverage - 2*error, ymax = coverage + 2*error), width=0.5,
