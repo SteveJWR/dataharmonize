@@ -19,7 +19,7 @@ if(slurm_arrayid == ""){
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
 }
-latent.pwl <- T
+latent.pwl <- F
 
 include.bootstrap = T
 B.boot = 50
