@@ -23,7 +23,7 @@ latent.pwl <- F
 
 include.bootstrap = T
 B.boot = 50
-n.sims = 100 # TODO: Change this to 500
+n.sims = 5
 
 #n.set <- c(1000,2000)
 #n.set <- c(1000, 2000, 5000)
@@ -219,7 +219,7 @@ ker.list <- list(ker.set.1,
 
 mu.y = 0.0 #0.1 #0.3
 mu.z = 0.0 #0.1 #0.3
-n.impute = 10
+n.impute = 50
 fmla <- formula(outcome ~ age )
 
 
@@ -356,7 +356,7 @@ for(sim in sim.start:n.sims){
                                  Y,Z,cond.y,cond.z,
                                  mu.y,mu.z,R.bins = 1000)
 
-    #TODO: Ensure the conditional probabilities are matching correctly.
+
     impute.sim.cov.adj <- ImputeOutcomes(sim.data,sim.data$Y,sim.data$Z,n.impute,
                                          Y.train,Z.train,cond.y,cond.z,
                                          mu.y,mu.z,ref.cols, ker.set, R.bins = 1000)
