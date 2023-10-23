@@ -221,46 +221,36 @@ if(make.plots){
 
 
 
-  lat.dist.mean.vec = c(lat.dist.mean[,1]/(-max(lat.dist.mean[,1])),
-                        lat.dist.mean[,2]/(-max(lat.dist.mean[,2])),
-                        lat.dist.mean[,3]/(-max(lat.dist.mean[,3])),
-                        lat.dist.mean[,4])/(-max(lat.dist.mean[,4]))
-  block.1 <- (lat.dist.mean[,1] - min(lat.dist.mean[,1]))/(max(lat.dist.mean[,1])-min(lat.dist.mean[,1]))
-  block.2 <- (lat.dist.mean[,2] - min(lat.dist.mean[,2]))/(max(lat.dist.mean[,2])-min(lat.dist.mean[,2]))
-  block.3 <- (lat.dist.mean[,3] - min(lat.dist.mean[,3]))/(max(lat.dist.mean[,3])-min(lat.dist.mean[,3]))
-  block.4 <- (lat.dist.mean[,4] - min(lat.dist.mean[,4]))/(max(lat.dist.mean[,4])-min(lat.dist.mean[,4]))
+  lat.dist.mean.vec = c(lat.dist.mean[,1],
+                        lat.dist.mean[,2],
+                        lat.dist.mean[,3],
+                        lat.dist.mean[,4])
 
-  lat.dist.mean.scaled.vec = c(block.1,block.2,block.3,block.4)
-  block.1 <- (lat.dist.sd[,1])/(max(lat.dist.mean[,1])-min(lat.dist.mean[,1]))
-  block.2 <- (lat.dist.sd[,2])/(max(lat.dist.mean[,2])-min(lat.dist.mean[,2]))
-  block.3 <- (lat.dist.sd[,3])/(max(lat.dist.mean[,3])-min(lat.dist.mean[,3]))
-  block.4 <- (lat.dist.sd[,4])/(max(lat.dist.mean[,4])-min(lat.dist.mean[,4]))
 
-  lat.dist.sd.scaled.vec = c(block.1,block.2,block.3,block.4)
+
+  lat.dist.sd.vec = c(lat.dist.sd[,1],lat.dist.sd[,2],lat.dist.sd[,3],lat.dist.sd[,4])
 
   res.data <- data.frame("SampleSize" = c(rep(paste0("n = ", n.seq[1]), L),
                                           rep(paste0("n = ", n.seq[2]), L),
                                           rep(paste0("n = ", n.seq[3]), L),
                                           rep(paste0("n = ", n.seq[4]), L)),
                          "mu" = c(mu.set,mu.set,mu.set,mu.set),
-                         "lat.dist.mean" = c(lat.dist.mean[,1], lat.dist.mean[,2], lat.dist.mean[,3], lat.dist.mean[,4]),
-                         "lat.dist.sd" = c(lat.dist.sd[,1], lat.dist.sd[,2], lat.dist.sd[,3], lat.dist.sd[,4]),
-                         "lat.dist.mean.scaled" = lat.dist.mean.scaled.vec,
-                         "lat.dist.sd.scaled" = lat.dist.sd.scaled.vec)
+                         "lat.dist.mean" = lat.dist.mean.vec,
+                         "lat.dist.sd" = lat.dist.sd.vec)
 
   res.data$SampleSize <- factor(res.data$SampleSize, levels = paste0("n = ", n.seq))
 
-  plt.mu <- ggplot(res.data, aes(x = mu, y = lat.dist.mean.scaled, color = SampleSize)) +
+  plt.mu <- ggplot(res.data, aes(x = mu, y = lat.dist.mean, color = SampleSize)) +
     geom_line() +
-    geom_ribbon(aes(ymin = lat.dist.mean.scaled - 2*lat.dist.sd.scaled, ymax = lat.dist.mean.scaled + 2*lat.dist.sd.scaled, fill = SampleSize),alpha=0.3) +
-    ggtitle(paste0(kernel, " Kernel Cross Validation")) +
+    geom_ribbon(aes(ymin = lat.dist.mean - 2*lat.dist.sd, ymax = lat.dist.mean + 2*lat.dist.sd, fill = SampleSize),alpha=0.3) +
+    ggtitle(paste0(kernel, " Kernel Latent Wasserstein Cross Validation")) +
     xlab("Mu") +
-    ylab("Normalized CV Likelihood")
+    ylab("CV Latent Wasserstein Distance")
   #geom_errorbar(aes(ymin = lat.dist.mean.scaled - 2*lat.dist.sd.scaled, ymax = lat.dist.mean.scaled + 2*lat.dist.sd.scaled))
 
   plt.mu
 
-  png(filename = paste0("plots/regularization_cv_sim",kernel,".png"),
+  png(filename = paste0("plots/regularization_wasserstein_dist_cv_sim",kernel,".png"),
       width = png.width, height = png.height, res = png.res)
 
   plt.mu

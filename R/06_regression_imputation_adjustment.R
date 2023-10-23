@@ -19,17 +19,17 @@ if(slurm_arrayid == ""){
   # coerce the value to an integer
   id <- as.numeric(slurm_arrayid)
 }
-latent.pwl <- T
+latent.pwl <- F
 
 include.bootstrap = T
 B.boot = 50
-n.sims = 5 # TODO: Change this to 500
+n.sims = 100 # TODO: Change this to 500
 
 #n.set <- c(1000,2000)
 #n.set <- c(1000, 2000, 5000)
 
 
-n.true <- 10**(7)
+n.true <- 10**(6)
 
 Ny <- 30
 Nz <- 30
@@ -112,6 +112,7 @@ if(compute.true.latent){
   mixture.y.set <- matrix(NA,nrow = nrow(X.un), ncol = R.bins)
   mixture.z.set <- matrix(NA,nrow = nrow(X.un), ncol = R.bins)
   for (j in seq(nrow(X.un))) {
+    cat(paste0(j,"/", nrow(X.un)), end = "\r")
     x <- as.numeric(X.un[j, ])
     match.id = which(x == round.X)
     gamma1.counts = round((R.bins - 1)*gamma1[match.id]) + 1
@@ -218,7 +219,7 @@ ker.list <- list(ker.set.1,
 
 mu.y = 0.0 #0.1 #0.3
 mu.z = 0.0 #0.1 #0.3
-n.impute = 50
+n.impute = 10
 fmla <- formula(outcome ~ age )
 
 
@@ -384,9 +385,9 @@ for(sim in sim.start:n.sims){
     beta.quantile <-quantile.match.coefs[2]
 
 
-    imp.reg$`cc-coefficients`[2] - 2.0*sqrt(imp.reg$`cc-variance`[2,2])  <= beta.true & imp.reg$`cc-coefficients`[2] + 2.0*sqrt(imp.reg$`cc-variance`[2,2]) >= beta.true
-    imp.reg$coefficients[2] - 2.0*sqrt(imp.reg$variance[2,2])  <= beta.true & imp.reg$coefficients[2] + 2.0*sqrt(imp.reg$variance[2,2]) >= beta.true
-    imp.reg.cov.adj$coefficients[2] - 2.0*sqrt(imp.reg.cov.adj$variance[2,2])  <= beta.true & imp.reg.cov.adj$coefficients[2] + 2.0*sqrt(imp.reg.cov.adj$variance[2,2]) >= beta.true
+    imp.reg$`cc-coefficients`[2] - 1.96*sqrt(imp.reg$`cc-variance`[2,2])  <= beta.true & imp.reg$`cc-coefficients`[2] + 1.96*sqrt(imp.reg$`cc-variance`[2,2]) >= beta.true
+    imp.reg$coefficients[2] - 1.96*sqrt(imp.reg$variance[2,2])  <= beta.true & imp.reg$coefficients[2] + 1.96*sqrt(imp.reg$variance[2,2]) >= beta.true
+    imp.reg.cov.adj$coefficients[2] - 1.96*sqrt(imp.reg.cov.adj$variance[2,2])  <= beta.true & imp.reg.cov.adj$coefficients[2] + 1.96*sqrt(imp.reg.cov.adj$variance[2,2]) >= beta.true
 
 
     dev.cc[sim,i] = beta.hat.cc - beta.true
@@ -397,12 +398,12 @@ for(sim in sim.start:n.sims){
     dev.quantile[sim,i] = beta.quantile - beta.true
 
 
-    cover.cc[sim,i] = imp.reg$`cc-coefficients`[2] - 2.0*sqrt(imp.reg$`cc-variance`[2,2])  <= beta.true & imp.reg$`cc-coefficients`[2] + 2.0*sqrt(imp.reg$`cc-variance`[2,2]) >= beta.true
-    cover[sim,i] = imp.reg$coefficients[2] - 2.0*sqrt(imp.reg$variance[2,2])  <= beta.true & imp.reg$coefficients[2] + 2.0*sqrt(imp.reg$variance[2,2]) >= beta.true
-    cover.cov.adj[sim,i] = imp.reg.cov.adj$coefficients[2] - 2.0*sqrt(imp.reg.cov.adj$variance[2,2])  <= beta.true & imp.reg.cov.adj$coefficients[2] + 2.0*sqrt(imp.reg.cov.adj$variance[2,2]) >= beta.true
-    cover.true.latent[sim,i] = imp.reg.true.latent$coefficients[2] - 2.0*sqrt(imp.reg.true.latent$variance[2,2])  <= beta.true & imp.reg.true.latent$coefficients[2] + 2.0*sqrt(imp.reg.true.latent$variance[2,2]) >= beta.true
-    cover.z.score[sim,i] = beta.z.score - 2.0*sqrt(sandwich(fit.z.score)[2,2]) <= beta.true & beta.z.score + 2.0*sqrt(sandwich(fit.z.score)[2,2]) >=  beta.true
-    cover.quantile[sim,i] = beta.quantile - 2.0*sqrt(sandwich(fit.quantile)[2,2]) <= beta.true & beta.quantile + 2.0*sqrt(sandwich(fit.quantile)[2,2]) >=  beta.true
+    cover.cc[sim,i] = imp.reg$`cc-coefficients`[2] - 1.96*sqrt(imp.reg$`cc-variance`[2,2])  <= beta.true & imp.reg$`cc-coefficients`[2] + 1.96*sqrt(imp.reg$`cc-variance`[2,2]) >= beta.true
+    cover[sim,i] = imp.reg$coefficients[2] - 1.96*sqrt(imp.reg$variance[2,2])  <= beta.true & imp.reg$coefficients[2] + 1.96*sqrt(imp.reg$variance[2,2]) >= beta.true
+    cover.cov.adj[sim,i] = imp.reg.cov.adj$coefficients[2] - 1.96*sqrt(imp.reg.cov.adj$variance[2,2])  <= beta.true & imp.reg.cov.adj$coefficients[2] + 1.96*sqrt(imp.reg.cov.adj$variance[2,2]) >= beta.true
+    cover.true.latent[sim,i] = imp.reg.true.latent$coefficients[2] - 1.96*sqrt(imp.reg.true.latent$variance[2,2])  <= beta.true & imp.reg.true.latent$coefficients[2] + 1.96*sqrt(imp.reg.true.latent$variance[2,2]) >= beta.true
+    cover.z.score[sim,i] = beta.z.score - 1.96*sqrt(sandwich(fit.z.score)[2,2]) <= beta.true & beta.z.score + 1.96*sqrt(sandwich(fit.z.score)[2,2]) >=  beta.true
+    cover.quantile[sim,i] = beta.quantile - 1.96*sqrt(sandwich(fit.quantile)[2,2]) <= beta.true & beta.quantile + 1.96*sqrt(sandwich(fit.quantile)[2,2]) >=  beta.true
 
 
     if(include.bootstrap){
@@ -411,7 +412,7 @@ for(sim in sim.start:n.sims){
                                                             mu.y,mu.z,ref.cols, ker.set, R.bins = 1000, B.boot = B.boot, verbose = T)
 
       dev.bootstrap[sim,i] = bootstrap.results$coefficients[2] - beta.true
-      cover.bootstrap[sim,i] = bootstrap.results$coefficients[2] - 2.0*sqrt(bootstrap.results$variance[2,2])  <= beta.true & bootstrap.results$coefficients[2] + 2.0*sqrt(bootstrap.results$variance[2,2]) >= beta.true
+      cover.bootstrap[sim,i] = bootstrap.results$coefficients[2] - 1.96*sqrt(bootstrap.results$variance[2,2])  <= beta.true & bootstrap.results$coefficients[2] + 1.96*sqrt(bootstrap.results$variance[2,2]) >= beta.true
 
     }
 
@@ -468,7 +469,7 @@ if(latent.pwl){
 
 
 
-make.plots = T
+make.plots = F
 
 if(make.plots){
   library(ggpubr)
