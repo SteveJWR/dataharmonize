@@ -10,7 +10,6 @@ library(dplyr)
 library(gridExtra)
 
 # dataset of all cognitive tests and covariates
-# TODO: update this full description, request to NACC, to replicate this you may get a different number.
 
 all_tests <- read.csv("Local_Data/investigator_nacc47.csv")
 
@@ -23,7 +22,7 @@ w_age = (all_tests$NACCAGE>59) & (all_tests$NACCAGE <= 85)
 all_tests = all_tests[w_cog&w_age,]
 n = nrow(all_tests)
 
-score1 <- "NACCMMSE" # TODO: Can use other examples of conversion here
+score1 <- "NACCMMSE" #
 score2 <- "MOCATOTS" #
 
 # Maxima of each test scores

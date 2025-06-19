@@ -4,6 +4,7 @@ library(dplyr)
 library(dnoiseR)
 library(ggplot2)
 library(sandwich)
+library(scales)
 #source("R/paper_functions.R")
 #source("R/01_functions.R")
 # model 1
@@ -617,9 +618,11 @@ if(make.plots){
                                        z.score.rmse.sd,quantile.rmse.sd))
 
 
-  res.data <- res.data %>% filter(method != 'DNOISE (cov. adj.)') %>% filter(method != 'DNOISE')
-  plt.bias <- ggplot(res.data, aes(x = log(n), y = bias, color = method)) +
-    geom_line()  #+
+  res.data <- res.data %>% dplyr::filter(method != 'DNOISE (cov. adj.)') %>% dplyr::filter(method != 'DNOISE')
+  plt.bias <- ggplot(res.data, aes(x = n, y = bias, color = method)) +
+    geom_line() +
+    scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+                                   labels = trans_format("log10", math_format(10^.x))) #+
   #geom_line(aes(x = n, y = rmse, color = method)) #+
   #geom_errorbar(aes(ymin = bias - 2*rmse, ymax = bias + 2*rmse))
 
@@ -642,9 +645,11 @@ if(make.plots){
   }
 
 
-  plt.rmse <- ggplot(res.data, aes(x = log(n), y = log(rmse), color = method)) +
+  plt.rmse <- ggplot(res.data, aes(x = n, y = log(rmse), color = method)) +
     geom_line() +
-    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))
+    geom_errorbar(aes(ymin = log(rmse - 2*rmse_sd), ymax = log(rmse + 2*rmse_sd)))+
+    scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+                  labels = trans_format("log10", math_format(10^.x)))
 
   plt.rmse
 
@@ -691,13 +696,15 @@ if(make.plots){
                          "error" = cov.error)
 
 
-  cov.data <- cov.data %>% filter(method != 'DNOISE (cov. adj.)') %>% filter(method != 'DNOISE')
+  cov.data <- cov.data %>%  dplyr::filter(method != 'DNOISE (cov. adj.)') %>%  dplyr::filter(method != 'DNOISE')
 
-  plt.coverage <- ggplot(cov.data, aes(x = log(n), y = coverage, color = method)) +
+  plt.coverage <- ggplot(cov.data, aes(x = n, y = coverage, color = method)) +
     geom_line(position=position_dodge(width=0.2)) +
     geom_errorbar(aes(ymin = coverage - 2*error, ymax = coverage + 2*error), width=0.5,
                   linewidth=0.5, position=position_dodge(width=0.2)) +
-    geom_hline(yintercept=0.95, linetype='dotted', col = 'black')
+    geom_hline(yintercept=0.95, linetype='dotted', col = 'black') +
+    scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+                  labels = trans_format("log10", math_format(10^.x)))
 
   plt.coverage
 
