@@ -53,14 +53,14 @@ ker.set <- list(unif.4,unif.0.5)
 
 ################ regression data cleaning ################
 
-# TODO: Move this to the end
+
 
 all_tests <- read.csv("Local_Data/investigator_nacc47.csv")
 
 # indicates cognitively normal individuals
 #w_normal = all_tests$CDRGLOB==0
 
-# TODO: can also include the different cdr scores and cdr/age interaction in the model
+# can also include the different cdr scores and cdr/age interaction in the model
 # discretize it into 3 groups, >= 1, 0.5, 0
 
 # Maxima of possible tests scores
@@ -106,7 +106,13 @@ clean.tests$cdr_group <- case_when(
   clean.tests$cdr == 0.5 ~ "0.5",
   clean.tests$cdr == 1 ~ ">=1"
 )
-clean.tests$cdr_group <- as.factor(clean.tests$cdr_group)
+
+clean.tests$sex <- case_when(
+  clean.tests$sex == 1 ~ "F",
+  clean.tests$sex == 2 ~ "M",
+)
+
+clean.tests$cdr_group <- factor(clean.tests$cdr_group, levels = c('0', '0.5', '>=1'))
 clean.tests$ne4s[clean.tests$ne4s == 9] = NA #missing
 clean.tests$ne4s_group <- as.factor(clean.tests$ne4s)
 
@@ -199,7 +205,7 @@ X.nocov <- list.3y.nocov$X
 Z.imp.nocov <- list.3y.nocov$Z
 
 fmla.1 <- formula(outcome ~ age + sex +  educ_binary *ne4s_group + cdr_group)
-#fmla.1 <- formula(outcome ~ age)
+                                                        #fmla.1 <- formula(outcome ~ age)
 
 imp.reg.results.3y <- ImputationRegressionGLM(fmla.1, X, Z.imp)
 imp.reg.results.3y.nocov <- ImputationRegressionGLM(fmla.1, X.nocov, Z.imp.nocov)
@@ -282,7 +288,6 @@ m3 <- data.frame("term" = term,
                  "std.error" = sqrt(diag(imp.reg.results.3y$variance)))
 m3$model = "DNOISe"
 
-#TODO: Fix these with the corresponding models.
 m4 <- data.frame("term" = term,
                  "estimate" = imp.reg.results.3y.cwopt$`coefficients`,
                  "std.error" = sqrt(diag(imp.reg.results.3y.cwopt$variance)))
@@ -870,7 +875,7 @@ if(plot.results){
 
   n.coef <- length(term)
   coef.x <- rep(seq(1,n.coef), times = 7)
-  coef.x <- coef.x + rep(seq(-3,3)/(21), each = n.coef)
+  coef.x <- coef.x + rep(seq(-3,3)/(14), each = n.coef)
   method.names <- c(rep(c("Only MOCA","DNOISe Bootstrap","Z Score Matching","Quantile Matching"), each = n.coef),
                    rep(c("DNOISe Bootstrap","Z Score Matching","Quantile Matching"), each = n.coef))
 
@@ -884,12 +889,13 @@ if(plot.results){
                           "Method" = method.names,
                           "Dataset" = dataset
   )
+  plot.data <- plot.data %>% filter(Method %in% c("Only MOCA","DNOISe Bootstrap","Z Score Matching"))
   plot.data$Method <- factor(plot.data$Method, levels = c("Only MOCA","DNOISe Bootstrap","Z Score Matching","Quantile Matching"))
   title = "Cognitive Reserve Regression Coefficients"
 
   plt <- ggplot(plot.data,aes(x = Xcoef, y = Coefficients, group = interaction(Dataset, Method),
                 color = Method, linetype = Dataset)) +
-      geom_point(aes(shape=Dataset)) +
+      geom_point(aes(shape=Dataset), size = 2) +
       geom_errorbar(aes(ymin = Coefficients - 2*sd, ymax = Coefficients + 2*sd), width = 0.2) +
       ggtitle(title) +
       xlab("Parameter") +
@@ -905,9 +911,28 @@ if(plot.results){
   # Close the pdf file
   dev.off()
 
+  plot.data.subset <- plot.data %>% filter(Parameters %in% c("age","sexM","educ_binary"))
+  plt <- ggplot(plot.data.subset,aes(x = Xcoef, y = Coefficients, group = interaction(Dataset, Method),
+                              color = Method, linetype = Dataset)) +
+    geom_point(aes(shape=Dataset), size = 2) +
+    geom_errorbar(aes(ymin = Coefficients - 2*sd, ymax = Coefficients + 2*sd), width = 0.2) +
+    ggtitle(paste0(title," Subset")) +
+    xlab("Parameter") +
+    scale_linetype_manual(values=c("twodash", "solid")) +
+    scale_x_continuous(labels=term, breaks=seq(1,n.coef))+
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+  # add levels to coef.names
+  png(filename = paste0("plots/impute_e4_education_interaction_subset.png"),
+      width = (1.3)*png.width, height = png.height, res = png.res)
+
+  plt
+  # Close the pdf file
+  dev.off()
 
 
-}
+
+     }
 
 
 

@@ -231,7 +231,6 @@ for(j in subset.idx){
                                       Y.train,Z.train,cond.y,cond.z,
                                       mu1,mu2,ref.cols, ker.set, R.bins = 1000, verbose = F)
 
-  #TODO: fix the cross entropy term in the package then make this not negative
   ce = -empirical_cross_entropy(pred.dist,z.test)
   res[j] = ce
 }
@@ -243,6 +242,8 @@ colnames(results) = c("mu1", "mu2", "ce")
 sim.idx = which(!is.na(results$ce))
 results <- results[sim.idx,]
 saveRDS(results, paste0("data/mmse_moca_conversion_mu_results",id,".rds"))
+
+
 
 
 
@@ -263,24 +264,57 @@ if(plot.results){
   results <- results[!is.na(results$ce),]
   j.min = which.min(results$ce)
 
-  plt <- ggplot(data = results, aes(mu1, mu2, fill= ce)) +
-                geom_tile() +
-                scale_fill_gradient(low="yellow", high="blue",
-                                    limits=c(min(results$ce), max(results$ce))) +
-    geom_point(aes(x=0.01,y=0.01),colour="red") +
-    geom_point(aes(x=results[j.min,1],y=results[j.min,2]),colour="black") +
+  a = min(results$ce)
+  b = max(results$ce)
+  log_scale =exp(seq(log(0.003), log(1), length.out = 10))
+  scaled_seq <- a + (b - a) * (log_scale - min(log_scale)) / (max(log_scale) - min(log_scale))
+
+  plt <- ggplot(data = results, aes(mu1, mu2, z= ce)) +
+    geom_contour_filled(breaks = scaled_seq) +
+    # scale_fill_viridis_d(option = "C", direction = -1) + # direction = 1 makes low values lighter
+    scale_fill_manual(values = terrain.colors(length(scaled_seq) - 1)) +
+    geom_point(aes(x=0.01,y=0.01),colour="black", shape = 4, size = 2.5, stroke = 0.7) +
+    geom_point(aes(x=results[j.min,1],y=results[j.min,2]),colour="black", shape = 1, size = 2.5, stroke = 0.7) +
     theme_bw() +
     ggtitle("Smoothing Parameter Conversion Cross Entropy") +
-    xlab("\u03bc 1") +
-    ylab("\u03bc 2")
+    xlab(expression(mu[Y])) +
+    ylab(expression(mu[Z]))
 
 
   png(filename = "plots/mmse_moca_conversion_prediction.png",
       width = png.width, height = png.height, res = png.res)
 
   plt
-  # Close the pdf file
   dev.off()
+
+  #
+  # results <- readRDS("data/mmse_moca_conversion_mu_results1.rds")
+  # for (i in 2:100) {
+  #   res.tmp <- readRDS(paste0("data/mmse_moca_conversion_mu_results", i, ".rds"))
+  #   results <- rbind(results, res.tmp)
+  # }
+  #
+  # # Remove rows with NA in 'ce'
+  # results <- results[!is.na(results$ce), ]
+  # j.min <- which.min(results$ce)
+  #
+  # # Create contour plot
+  # plt <- ggplot(data = results, aes(mu1, mu2, z = ce)) +
+  #   stat_contour(aes(linetype = ..level..), color = "black", bins = 10) +
+  #   geom_point(aes(x = 0.01, y = 0.01), shape = 4, size = 3, stroke = 1.2) +  # red point replaced with X
+  #   geom_point(aes(x = results[j.min, 1], y = results[j.min, 2]), shape = 16, size = 3) +  # black dot
+  #   theme_bw() +
+  #   ggtitle("Smoothing Parameter Conversion Cross Entropy") +
+  #   xlab(expression(mu[Y])) +
+  #   ylab(expression(mu[Z])) +
+  #   theme(legend.position = "none")  # No legend for B/W plot
+  #
+  # # Save plot as PNG
+  # png(filename = "plots/mmse_moca_conversion_prediction.png",
+  #     width = 1200, height = 1000, res = 200)
+  #
+  # plt
+  # dev.off()
 
 
   # naive conversion comparison
