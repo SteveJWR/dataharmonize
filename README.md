@@ -1,10 +1,12 @@
 
-Code for the paper "[Data Harmonization Via Regularized Nonparametric Mixing Distribution Estimation](https://arxiv.org/abs/2110.06077)". 
+# Code for: *[Data Harmonization Via Regularized Nonparametric Mixing Distribution Estimation](https://arxiv.org/abs/2110.06077)*
 
+This repository contains the code used in the paper *"Data Harmonization Via Regularized Nonparametric Mixing Distribution Estimation."*
 
-## Installation of main package
+## Installation
 
-You can install the development version of dnoiseR, the package which is used to for generating the code from
+You can install the development version of the `dnoiseR` package, which is used to generate the results in the paper, directly from GitHub:
+
 [GitHub](https://github.com/) with:
 
 ``` r
