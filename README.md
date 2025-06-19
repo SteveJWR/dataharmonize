@@ -18,4 +18,4 @@ devtools::install_github("SteveJWR/dnoiseR")
 ## Running the Code 
 All code required to generate the figures in the paper is included in the `R/` folder. Scripts are numbered sequentially according to their appearance in the manuscript.
 
-The National Alzheimer’s Coordinating Center (NACC) Uniform Data Set is included in the `data/` folder. It is also publicly available [here](https://naccdata.org/data-collection/forms-documentation/uds-3).
+A cleaned version of The National Alzheimer’s Coordinating Center (NACC) Uniform Data Set is included in the `data/` folder (as the output of `07_application_data_cleaning.R`) along with the crosswalk dataset. It is also publicly available [here](https://naccdata.org/data-collection/forms-documentation/uds-3).
